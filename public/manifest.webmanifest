@@ -1,0 +1,74 @@
+{
+  "id": "/",
+  "name": "Nth Play",
+  "short_name": "Nth Play",
+  "description": "Book a pickleball court at Nth Play in seconds — live availability, open 6 AM to 10 PM daily.",
+  "start_url": "/?source=app",
+  "scope": "/",
+  "display": "standalone",
+  "launch_handler": {
+    "client_mode": [
+      "navigate-existing",
+      "auto"
+    ]
+  },
+  "handle_links": "preferred",
+  "orientation": "portrait",
+  "background_color": "#2d1c12",
+  "theme_color": "#2d1c12",
+  "lang": "en",
+  "categories": [
+    "sports",
+    "lifestyle"
+  ],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Book a court",
+      "short_name": "Book",
+      "url": "/book?source=app",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "My bookings",
+      "short_name": "Bookings",
+      "url": "/my-bookings?source=app",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

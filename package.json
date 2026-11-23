@@ -1,0 +1,56 @@
+{
+  "name": "nthplay",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Nth Play — real-time pickleball court booking (React + Supabase)",
+  "type": "module",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --pretty",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:db": "bash scripts/test-db.sh",
+    "test:integration": "bash scripts/e2e/stack.sh && node scripts/e2e/test-functions.mjs && node scripts/e2e/test-realtime.mjs",
+    "test:e2e": "playwright test",
+    "stack:local": "bash scripts/e2e/stack.sh"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.2.5",
+    "@hookform/resolvers": "^5.1.1",
+    "@supabase/supabase-js": "^2.50.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.515.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-hook-form": "^7.57.0",
+    "react-router": "^7.6.2",
+    "tailwind-merge": "^3.3.1",
+    "write-excel-file": "^4.1.1",
+    "zod": "^3.25.67"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.29.0",
+    "@playwright/test": "^1.53.0",
+    "@tailwindcss/vite": "^4.1.10",
+    "@types/node": "^22.15.0",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.6.0",
+    "eslint": "^9.29.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.2.0",
+    "tailwindcss": "^4.1.10",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.34.1",
+    "vite": "^7.0.0",
+    "vitest": "^3.2.4"
+  }
+}

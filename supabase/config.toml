@@ -1,0 +1,58 @@
+# Supabase CLI configuration (local development: `supabase start`).
+project_id = "nthplay"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 17
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[realtime]
+enabled = true
+
+[studio]
+enabled = true
+port = 54323
+
+[local_smtp]
+# Local email testing UI (password reset / confirmation emails) at http://localhost:54324
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+file_size_limit = "10MiB"
+
+[auth]
+enabled = true
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173/**"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+# Set to true in production so new accounts verify their email address.
+enable_confirmations = false
+
+[auth.rate_limit]
+email_sent = 30
+sign_in_sign_ups = 30
+
+# These functions authenticate callers themselves (cron secret / provider signature).
+[functions.send-notifications]
+verify_jwt = false
+
+[functions.payment-webhook]
+verify_jwt = false

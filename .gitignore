@@ -1,0 +1,17 @@
+node_modules
+dist
+*.local
+.env
+.env.*
+!.env.example
+coverage
+playwright-report
+test-results
+scripts/e2e/.keys.json
+supabase/.temp
+supabase/.branches
+.DS_Store
+
+.vercel
+.env*
+!.env.example

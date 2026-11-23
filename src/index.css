@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* Nth Play brand, sampled from the logo:
+     terracotta #8C553B (the N), olive #4F6644 ("Play"), cream #F6DEC6 (background). */
+
+  /* Deep terracotta-brown for text and dark surfaces */
+  --color-ink-950: #1c110b;
+  --color-ink-900: #2d1c12;
+  --color-ink-800: #43291b;
+  --color-ink-700: #5e3a26;
+  --color-ink-600: #7a4c33;
+  --color-ink-500: #8c553b;
+
+  /* Olive green (AA-contrast on white from 600 up) */
+  --color-brand-50: #f3f6ef;
+  --color-brand-100: #e3eadb;
+  --color-brand-200: #c8d5ba;
+  --color-brand-300: #a4b98f;
+  --color-brand-400: #7f9a69;
+  --color-brand-500: #647f52;
+  --color-brand-600: #56704a;
+  --color-brand-700: #4f6644;
+  --color-brand-800: #3f5236;
+  --color-brand-900: #32412b;
+
+  /* Accent: light terracotta (pops on the dark brown), cream as its soft tint */
+  --color-ball: #e9a178;
+  --color-ball-soft: #f6dec6;
+
+  /* Warm neutrals in place of cool slate, so greys sit well on the cream */
+  --color-slate-50: #fbf5ee;
+  --color-slate-100: #f5ebdf;
+  --color-slate-200: #eadbc9;
+  --color-slate-300: #d5c1ab;
+  --color-slate-400: #aa937d;
+  --color-slate-500: #7d6957;
+  --color-slate-600: #604f41;
+  --color-slate-700: #4b3d32;
+  --color-slate-800: #352a22;
+  --color-slate-900: #251c16;
+  --color-slate-950: #17100c;
+
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1.125rem;
+  --shadow-card: 0 1px 2px rgb(45 28 18 / 0.05), 0 4px 16px -4px rgb(45 28 18 / 0.09);
+  --shadow-lift: 0 2px 4px rgb(45 28 18 / 0.06), 0 12px 32px -8px rgb(45 28 18 / 0.18);
+
+  --animate-pulse-soft: pulse-soft 2s ease-in-out infinite;
+  @keyframes pulse-soft {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+  }
+}
+
+@layer base {
+  /* The page never scrolls sideways: wide content scrolls inside its own box instead. */
+  html, body { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; overflow-x: clip; }
+  body {
+    @apply bg-slate-50 text-ink-900 antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+  :focus-visible { @apply outline-2 outline-offset-2 outline-brand-600; }
+  ::selection { @apply bg-ball-soft text-ink-900; }
+  h1, h2, h3 { @apply tracking-tight; }
+  input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
+  dialog::backdrop { background: rgb(28 17 11 / 0.55); backdrop-filter: blur(2px); }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+}
+
+@layer components {
+  .container-page { @apply mx-auto w-full max-w-6xl px-4 sm:px-6; }
+  .court-lines {
+    background-image:
+      linear-gradient(to right, rgb(255 255 255 / 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(255 255 255 / 0.06) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+  /* Hatched pattern = not available (doesn't rely on colour alone) */
+  .hatch {
+    background-image: repeating-linear-gradient(135deg, rgb(148 163 184 / 0.22) 0 6px, transparent 6px 12px);
+  }
+}

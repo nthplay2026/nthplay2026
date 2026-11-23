@@ -8,11 +8,14 @@ export function BrandMark({ className, label }: { className?: string; label?: st
   );
 }
 
-/** Header/footer logo. The image already reads "Nth Play", so the name is only for screen readers. */
+/** Header/footer/sidebar logo: the full logo with the facility name beside it. */
 export function Logo({ name, dark = false }: { name: string; dark?: boolean }) {
   return (
-    <span className="flex items-center">
-      <BrandMark label={name} className={dark ? 'ring-1 ring-white/15' : 'ring-1 ring-ink-900/10'} />
+    <span className="flex items-center gap-2.5">
+      <BrandMark className={dark ? 'ring-1 ring-white/15' : 'ring-1 ring-ink-900/10'} />
+      <span className={cn('text-[17px] leading-tight font-extrabold tracking-tight', dark ? 'text-white' : 'text-ink-900')}>
+        {name}
+      </span>
     </span>
   );
 }

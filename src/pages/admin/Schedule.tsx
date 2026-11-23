@@ -126,7 +126,7 @@ export default function Schedule() {
                       <p className="text-sm font-semibold">{c.name}</p>
                       <p className="text-xs capitalize text-slate-500">{c.court_type}</p>
                     </div>
-                    <div className={cn('relative', closed && 'hatch')} style={{ height }}>
+                    <div className={cn('relative', closed && 'bg-neutral-100')} style={{ height }}>
                       {hours.map((m) => <div key={m} className="absolute inset-x-0 border-t border-slate-100" style={{ top: (m - dayOpen) * PX_PER_MIN }} aria-hidden />)}
                       {closed && <p className="absolute inset-x-0 top-6 text-center text-sm font-medium text-slate-500">Closed</p>}
                       {/* empty slots: click to book */}
@@ -145,7 +145,7 @@ export default function Schedule() {
                         </div>
                       ))}
                       {courtBlocks.map((bl) => (
-                        <div key={bl.id} className="absolute inset-x-1 flex items-start gap-1 overflow-hidden rounded-md border border-slate-300 bg-slate-200/90 px-2 py-1 text-[11px] font-medium text-slate-700 hatch"
+                        <div key={bl.id} className="absolute inset-x-1 flex items-start gap-1 overflow-hidden rounded-md border border-neutral-300 bg-neutral-200 px-2 py-1 text-[11px] font-medium text-neutral-700"
                           style={{ top: top(bl.start_at), height: span(bl.start_at, bl.end_at) }}>
                           <Wrench className="mt-0.5 size-3 shrink-0" aria-hidden /> {bl.reason}
                         </div>
@@ -175,7 +175,7 @@ export default function Schedule() {
         <li className="flex items-center gap-1.5"><span className="size-3 rounded border border-dashed border-amber-400 bg-amber-100" /> Pending / held</li>
         <li className="flex items-center gap-1.5"><span className="size-3 rounded bg-sky-100 ring-1 ring-sky-300" /> Completed</li>
         <li className="flex items-center gap-1.5"><span className="size-3 rounded bg-violet-100 ring-1 ring-violet-300" /> No-show</li>
-        <li className="flex items-center gap-1.5"><span className="size-3 rounded bg-slate-200 hatch" /> Blocked / closed</li>
+        <li className="flex items-center gap-1.5"><span className="size-3 rounded bg-neutral-200" /> Blocked / closed</li>
         <li className="flex items-center gap-1.5"><span className="h-0.5 w-4 bg-red-500" /> Now</li>
       </ul>
       <BookingPanel bookingId={open} onClose={() => setOpen(null)} onChanged={() => void live.reload()} />

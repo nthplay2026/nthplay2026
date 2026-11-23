@@ -20,6 +20,7 @@ update public.facility_settings set
   amenities = array['Shade canopy', 'Night lighting', 'Open 6 AM – 10 PM daily'],
   admin_alert_email = '',
   max_duration_minutes = 720,  -- customers can tap up to 12 one-hour slots
+  min_advance_minutes = 0,     -- a slot stays bookable until it ends (e.g. 4-5 PM until 5 PM)
   payment_methods = '[
     {"method":"gcash","enabled":true,"label":"GCash","instructions":"Pay the exact total via GCash (or any InstaPay bank app), then upload a screenshot of your receipt."},
     {"method":"cash","enabled":false,"label":"Cash at the facility","instructions":""},

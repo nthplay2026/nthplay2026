@@ -10,11 +10,13 @@ const style: Record<SlotStatus, string> = {
   held_by_you: 'border-sky-300 bg-sky-50 text-sky-900 cursor-pointer',
   held: 'border-amber-200 bg-amber-50 text-amber-900',
   pending: 'border-orange-200 bg-orange-50 text-orange-900',
-  booked: 'border-slate-200 bg-slate-100 text-slate-500',
-  blocked: 'border-slate-200 bg-slate-100 text-slate-500 hatch',
-  unavailable: 'border-slate-200 bg-slate-50 text-slate-400 hatch',
-  closed: 'border-slate-200 bg-slate-50 text-slate-400',
-  past: 'border-slate-200 bg-slate-100 text-slate-400',
+  // Slots that can't be booked: solid neutral grey (true grey, not the warm-tinted slate),
+  // told apart by their label and icon rather than a pattern.
+  booked: 'border-neutral-200 bg-neutral-200 text-neutral-500',
+  blocked: 'border-neutral-200 bg-neutral-200 text-neutral-500',
+  unavailable: 'border-neutral-200 bg-neutral-100 text-neutral-400',
+  closed: 'border-neutral-200 bg-neutral-100 text-neutral-400',
+  past: 'border-neutral-200 bg-neutral-100 text-neutral-400',
 };
 
 const Icon: Partial<Record<SlotStatus, typeof Check>> = {
@@ -151,7 +153,7 @@ export function SlotGrid({ courts, slots, rules, tz, currency, isSelected, justT
               </h3>
             )}
             {closed ? (
-              <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500 hatch">Closed this day</p>
+              <p className="rounded-xl bg-neutral-100 p-4 text-sm text-neutral-500">Closed this day</p>
             ) : visible.length === 0 ? (
               <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">No more times today.</p>
             ) : (
@@ -232,7 +234,7 @@ export function WeekGrid({ court, dates, slots, tz, currency, isSelected, justTa
               <th scope="row" className="sticky left-0 z-10 bg-white pr-1 text-left text-[11px] font-semibold text-slate-500 tabular-nums whitespace-nowrap">{label(m)}</th>
               {dates.map((d) => {
                 const s = byDay.get(d)?.get(m);
-                if (!s) return <td key={d}><span className="block h-9 rounded-lg bg-slate-50 hatch" aria-label="Closed" /></td>;
+                if (!s) return <td key={d}><span className="block h-9 rounded-lg bg-neutral-100" aria-label="Closed" /></td>;
                 const shown = s.status !== 'past' && s.slot_end && s.slot_end <= nowIso ? { ...s, status: 'past' as const } : s;
                 return (
                   <td key={d}>

@@ -80,8 +80,4 @@
       linear-gradient(to bottom, rgb(255 255 255 / 0.06) 1px, transparent 1px);
     background-size: 48px 48px;
   }
-  /* Hatched pattern = not available (doesn't rely on colour alone) */
-  .hatch {
-    background-image: repeating-linear-gradient(135deg, rgb(148 163 184 / 0.22) 0 6px, transparent 6px 12px);
-  }
 }

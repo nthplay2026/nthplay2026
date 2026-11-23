@@ -15,7 +15,7 @@ import ConfirmationPage from '@/pages/Confirmation';
 import MyBookingsPage from '@/pages/MyBookings';
 import BookingDetailsPage from '@/pages/BookingDetails';
 import { AccountPage, ForgotPasswordPage, LoginPage, RegisterPage, ResetPasswordPage } from '@/pages/Auth';
-import { ContactPage, NotFoundPage, PrivacyPage, TermsPage } from '@/pages/Info';
+import { ContactPage, NotFoundPage, PartyRulesPage, PrivacyPage, TermsPage } from '@/pages/Info';
 
 const AdminApp = lazy(() => import('@/pages/admin/AdminApp'));
 
@@ -68,6 +68,7 @@ export default function App() {
                 <Route path="contact" element={<ContactPage />} />
                 <Route path="terms" element={<TermsPage />} />
                 <Route path="privacy" element={<PrivacyPage />} />
+          <Route path="party-rules" element={<PartyRulesPage />} />
                 <Route path="*" element={<NotFoundPage />} />
               </Route>
             </Routes>

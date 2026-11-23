@@ -133,6 +133,7 @@ export function SiteFooter() {
             <li><Link className="hover:text-white" to="/book">Book a court</Link></li>
             <li><Link className="hover:text-white" to="/my-bookings">My bookings</Link></li>
             <li><Link className="hover:text-white" to="/contact">Location &amp; operating hours</Link></li>
+            <li><Link className="hover:text-white" to="/party-rules">Parties &amp; events</Link></li>
             <li><Link className="hover:text-white" to="/terms">Terms &amp; booking policy</Link></li>
             <li><Link className="hover:text-white" to="/privacy">Privacy policy</Link></li>
           </ul>

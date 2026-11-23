@@ -2,7 +2,7 @@ import { Link } from 'react-router';
 import { CheckCircle2, Clock, ExternalLink, Mail, MapPin } from 'lucide-react';
 import { useFacility } from '@/hooks/useFacility';
 import { dayOfWeek, formatDateLong } from '@/lib/time';
-import { defaultPrivacyText, defaultTermsText } from '@/lib/legal';
+import { defaultPartyRulesText, defaultPrivacyText, defaultTermsText } from '@/lib/legal';
 import { LegalText } from '@/components/layout/LegalText';
 import { buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/misc';
@@ -81,6 +81,23 @@ export function PrivacyPage() {
   return <Legal title="Privacy policy" updated={settings?.privacy_content ? settings.privacy_updated_at ?? null : null}
     text={settings?.privacy_content || defaultPrivacyText(settings)} />;
 }
+export function PartyRulesPage() {
+  const { settings } = useFacility();
+  return (
+    <>
+      <Legal title="Hosting a party or event" updated={settings?.party_rules_content ? settings.party_rules_updated_at ?? null : null}
+        text={settings?.party_rules_content || defaultPartyRulesText(settings)} />
+      <div className="container-page max-w-3xl pb-14">
+        <div className="flex flex-wrap gap-3 border-t border-slate-200 pt-6">
+          <Link to="/book" className={buttonVariants()}>Book court time</Link>
+          <FacebookButton />
+          <InstagramButton />
+        </div>
+      </div>
+    </>
+  );
+}
+
 export function NotFoundPage() {
   return (
     <div className="container-page py-24 text-center">

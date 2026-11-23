@@ -14,7 +14,7 @@ import { Alert, Badge, Card, CardContent, CardDescription, CardHeader, CardTitle
 import { useToast } from '@/components/ui/toast';
 import { PaymentQrCodes } from '@/components/admin/PaymentQrCodes';
 import { LegalText } from '@/components/layout/LegalText';
-import { defaultPrivacyText, defaultTermsText } from '@/lib/legal';
+import { defaultPartyRulesText, defaultPrivacyText, defaultTermsText } from '@/lib/legal';
 
 export default function SettingsPage() {
   type Tab = 'facility' | 'payments' | 'legal' | 'email' | 'audit' | 'backup';
@@ -25,7 +25,7 @@ export default function SettingsPage() {
   return (
     <AdminPage title="Settings" description="Facility details, payment methods, email delivery, the audit log and backups.">
       <Tabs label="Settings section" value={tab} onChange={setTab} className="mb-5"
-        items={[{ value: 'facility', label: 'Facility' }, { value: 'payments', label: 'Payment methods' }, { value: 'legal', label: 'Legal pages' }, { value: 'email', label: 'Email log' }, { value: 'audit', label: 'Audit log' }, { value: 'backup', label: 'Backup' }]} />
+        items={[{ value: 'facility', label: 'Facility' }, { value: 'payments', label: 'Payment methods' }, { value: 'legal', label: 'Rules & policies' }, { value: 'email', label: 'Email log' }, { value: 'audit', label: 'Audit log' }, { value: 'backup', label: 'Backup' }]} />
       {tab === 'facility' && <FacilityForm />}
       {tab === 'payments' && <PaymentMethods />}
       {tab === 'email' && <EmailLog />}
@@ -41,10 +41,16 @@ function LegalPages() {
   const { settings, reload } = useFacility();
   const toast = useToast();
   const { tz } = useFacility();
-  const [page, setPage] = useState<'terms' | 'privacy'>('terms');
-  const saved = page === 'terms' ? settings?.terms_content : settings?.privacy_content;
-  const updatedAt = page === 'terms' ? settings?.terms_updated_at : settings?.privacy_updated_at;
-  const fallback = page === 'terms' ? defaultTermsText(settings) : defaultPrivacyText(settings);
+  const [page, setPage] = useState<'terms' | 'privacy' | 'party'>('terms');
+  const PAGES = {
+    terms: { title: 'Terms & booking policy', path: '/terms', saved: settings?.terms_content, updatedAt: settings?.terms_updated_at, fallback: () => defaultTermsText(settings), saveLabel: 'terms' },
+    privacy: { title: 'Privacy policy', path: '/privacy', saved: settings?.privacy_content, updatedAt: settings?.privacy_updated_at, fallback: () => defaultPrivacyText(settings), saveLabel: 'privacy policy' },
+    party: { title: 'Party rules', path: '/party-rules', saved: settings?.party_rules_content, updatedAt: settings?.party_rules_updated_at, fallback: () => defaultPartyRulesText(settings), saveLabel: 'party rules' },
+  } as const;
+  const cur = PAGES[page];
+  const saved = cur.saved;
+  const updatedAt = cur.updatedAt;
+  const fallback = cur.fallback();
   const [text, setText] = useState('');
   const [preview, setPreview] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -53,7 +59,7 @@ function LegalPages() {
   }, [page, saved]);
 
   const dirty = text.trim() !== (saved || fallback).trim();
-  const title = page === 'terms' ? 'Terms & booking policy' : 'Privacy policy';
+  const title = cur.title;
 
   const save = async (content: string | null) => {
     setBusy(true);
@@ -69,19 +75,20 @@ function LegalPages() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Legal pages</CardTitle>
+        <CardTitle>Rules & policies</CardTitle>
         <CardDescription>
-          Edit what customers read on the Terms & booking policy and Privacy policy pages. Have someone familiar with
-          Philippine law (including the Data Privacy Act) review the final wording.
+          Edit what customers read on the Terms & booking policy, Privacy policy and Party rules pages (the party rules
+          open from the home page). Have someone familiar with Philippine law, including the Data Privacy Act, review the
+          final wording of the terms and privacy policy.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <Tabs label="Legal page" value={page} onChange={setPage}
-          items={[{ value: 'terms', label: 'Terms & booking policy' }, { value: 'privacy', label: 'Privacy policy' }]} />
+          items={[{ value: 'terms', label: 'Terms & booking policy' }, { value: 'privacy', label: 'Privacy policy' }, { value: 'party', label: 'Party rules' }]} />
         <p className="text-sm text-slate-600">
           {saved ? <>Your edited version · last updated <span className="font-medium text-ink-900">{formatDateTime(updatedAt ?? '', tz)}</span></>
             : 'Showing the built-in default text. Edit and save to make it yours.'}
-          {' '}<a href={page === 'terms' ? '/terms' : '/privacy'} target="_blank" rel="noreferrer" className="font-medium text-brand-700 hover:underline">View page</a>
+          {' '}<a href={cur.path} target="_blank" rel="noreferrer" className="font-medium text-brand-700 hover:underline">View page</a>
         </p>
         <div className="flex gap-2">
           <Button size="sm" variant={preview ? 'outline' : 'primary'} onClick={() => setPreview(false)}>Edit</Button>
@@ -97,7 +104,7 @@ function LegalPages() {
           </Field>
         )}
         <div className="flex flex-wrap gap-2">
-          <Button onClick={() => void save(text)} loading={busy} disabled={!dirty || !text.trim()}>Save {page === 'terms' ? 'terms' : 'privacy policy'}</Button>
+          <Button onClick={() => void save(text)} loading={busy} disabled={!dirty || !text.trim()}>Save {cur.saveLabel}</Button>
           {dirty && <Button variant="ghost" onClick={() => setText(saved || fallback)}>Discard changes</Button>}
           {saved && (
             <Button variant="danger-outline" className="ml-auto" disabled={busy}

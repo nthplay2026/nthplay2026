@@ -40,6 +40,8 @@ export interface FacilitySettings {
   terms_updated_at?: string | null;
   privacy_content?: string | null;
   privacy_updated_at?: string | null;
+  party_rules_content?: string | null;
+  party_rules_updated_at?: string | null;
   facility_name: string;
   tagline: string;
   description: string;

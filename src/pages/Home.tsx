@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { ArrowRight, Check } from 'lucide-react';
+import { ArrowRight, Check, PartyPopper } from 'lucide-react';
 import { useFacility } from '@/hooks/useFacility';
 import { useAsync } from '@/hooks/useAsync';
 import { api } from '@/lib/api';
@@ -132,6 +132,23 @@ export default function HomePage() {
         </div>
       </section>
       )}
+
+      {/* Parties & events: opens the rules admins edit in Settings > Rules & policies. */}
+      <section className="container-page mb-10" aria-labelledby="party-heading">
+        <Link to="/party-rules"
+          className="group flex flex-col gap-5 rounded-3xl border border-ball/40 bg-ball-soft/60 p-6 transition-colors hover:border-ball hover:bg-ball-soft sm:flex-row sm:items-center sm:justify-between sm:p-8">
+          <span className="flex items-start gap-4">
+            <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-ink-900 text-ball" aria-hidden><PartyPopper className="size-6" /></span>
+            <span>
+              <h2 id="party-heading" className="text-xl font-bold text-ink-900 sm:text-2xl">Hosting a party or event?</h2>
+              <span className="mt-1 block text-ink-800">Birthdays, team events and get-togethers are welcome. See the rules before you book.</span>
+            </span>
+          </span>
+          <span className={buttonVariants({ variant: 'outline', className: 'shrink-0 bg-white group-hover:border-ink-900' })}>
+            View party rules <ArrowRight />
+          </span>
+        </Link>
+      </section>
 
       <section className="container-page">
         <div className="relative overflow-hidden rounded-3xl bg-brand-700 px-6 py-12 text-center text-white sm:px-12">

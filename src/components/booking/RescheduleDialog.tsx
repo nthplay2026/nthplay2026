@@ -13,7 +13,6 @@ import { Button } from '@/components/ui/button';
 import { Alert, Skeleton } from '@/components/ui/misc';
 import { DateStrip } from './DateStrip';
 import { SlotGrid } from './SlotGrid';
-import { LiveIndicator } from './LiveIndicator';
 
 /** Pick a new time on the same court. The server re-validates and re-prices. */
 export function RescheduleDialog({ booking, open, onClose, onDone, staff = false }: {
@@ -64,7 +63,6 @@ export function RescheduleDialog({ booking, open, onClose, onDone, staff = false
         {!staff && settings && (
           <Alert tone="info">Rescheduling is available up to {settings.reschedule_deadline_hours} hours before your booking. The price is recalculated for the new time.</Alert>
         )}
-        <div className="flex justify-end"><LiveIndicator status={live.status} lastUpdated={live.lastUpdated} /></div>
         <DateStrip value={date} onChange={setDate} today={today} maxDays={staff ? 365 : settings?.max_advance_days ?? 30} days={10} />
         {live.error ? <Alert tone="error">{live.error}</Alert> : live.loading ? <Skeleton className="h-40" /> : court && (
           <SlotGrid courts={[court]} slots={live.slots} rules={rules.data ?? []} tz={tz} currency={booking.currency} isSelected={(s) => !!sel && slotKey(s) === slotKey(sel)}

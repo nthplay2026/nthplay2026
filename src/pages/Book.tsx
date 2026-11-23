@@ -14,7 +14,6 @@ import type { AvailabilitySlot, Quote } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { DateStrip } from '@/components/booking/DateStrip';
 import { Legend, SlotGrid, WeekGrid, isSelectable } from '@/components/booking/SlotGrid';
-import { LiveIndicator } from '@/components/booking/LiveIndicator';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Alert, Card, EmptyState, ErrorState, Skeleton, Tabs } from '@/components/ui/misc';
 import { useToast } from '@/components/ui/toast';
@@ -41,7 +40,7 @@ export default function BookPage() {
     return Array.from({ length: 7 }, (_, i) => addDays(date, i)).filter((d) => d <= last);
   }, [view, date, today, maxDays]);
 
-  const { slots, loading, error, status, lastUpdated, justTaken, announcement, reload } =
+  const { slots, loading, error, justTaken, announcement, reload } =
     useLiveAvailability(dates, view === 'week' ? weekCourt?.id ?? null : courtFilter === 'all' ? null : courtFilter);
 
   const rules = useAsync(() => api.pricingRules(), []);
@@ -141,7 +140,6 @@ export default function BookPage() {
           <h1 className="text-3xl font-bold text-ink-900 sm:text-4xl">Book a court</h1>
           <p className="mt-1 text-slate-600">Tap the time slots you want to play. Availability updates live.</p>
         </div>
-        <LiveIndicator status={status} lastUpdated={lastUpdated} onRefresh={() => void reload()} />
       </div>
       <p className="sr-only" aria-live="polite">{announcement}</p>
 

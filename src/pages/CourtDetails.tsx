@@ -10,7 +10,6 @@ import { buttonVariants } from '@/components/ui/button';
 import { Card, EmptyState, PageLoader, Skeleton } from '@/components/ui/misc';
 import { CourtImage } from '@/components/booking/CourtVisual';
 import { HoursTable } from '@/components/booking/HoursTable';
-import { LiveIndicator } from '@/components/booking/LiveIndicator';
 import { RateList, lowestRate } from '@/components/booking/RateList';
 import { isVideoUrl } from '@/components/booking/CourtVisual';
 import { CourtGallery } from '@/components/booking/CourtGallery';
@@ -74,7 +73,6 @@ export default function CourtDetailsPage() {
           <Card className="p-6">
             <div className="flex items-center justify-between gap-3">
               <h2 className="font-semibold">Open today</h2>
-              <LiveIndicator status={live.status} lastUpdated={null} />
             </div>
             {live.loading ? <Skeleton className="mt-3 h-16" /> : openToday.length === 0 ? (
               <p className="mt-3 text-sm text-slate-600">No more open times today.</p>

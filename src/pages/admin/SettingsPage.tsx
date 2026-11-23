@@ -14,16 +14,72 @@ import { useToast } from '@/components/ui/toast';
 import { PaymentQrCodes } from '@/components/admin/PaymentQrCodes';
 
 export default function SettingsPage() {
-  const [tab, setTab] = useState<'facility' | 'payments' | 'email' | 'audit'>('facility');
+  const [tab, setTab] = useState<'facility' | 'payments' | 'email' | 'audit' | 'backup'>('facility');
   return (
-    <AdminPage title="Settings" description="Facility details, payment methods, email delivery and the audit log.">
+    <AdminPage title="Settings" description="Facility details, payment methods, email delivery, the audit log and backups.">
       <Tabs label="Settings section" value={tab} onChange={setTab} className="mb-5"
-        items={[{ value: 'facility', label: 'Facility' }, { value: 'payments', label: 'Payment methods' }, { value: 'email', label: 'Email log' }, { value: 'audit', label: 'Audit log' }]} />
+        items={[{ value: 'facility', label: 'Facility' }, { value: 'payments', label: 'Payment methods' }, { value: 'email', label: 'Email log' }, { value: 'audit', label: 'Audit log' }, { value: 'backup', label: 'Backup' }]} />
       {tab === 'facility' && <FacilityForm />}
       {tab === 'payments' && <PaymentMethods />}
       {tab === 'email' && <EmailLog />}
       {tab === 'audit' && <AuditLog />}
+      {tab === 'backup' && <Backup />}
     </AdminPage>
+  );
+}
+
+const LAST_BACKUP_KEY = 'nthplay:last-backup';
+
+/** Downloads every business record as one JSON file (the free database plan has no automatic backups). */
+function Backup() {
+  const toast = useToast();
+  const { tz } = useFacility();
+  const [busy, setBusy] = useState(false);
+  const [last, setLast] = useState<string | null>(() => { try { return localStorage.getItem(LAST_BACKUP_KEY); } catch { return null; } });
+
+  const download = async () => {
+    setBusy(true);
+    try {
+      const data = await api.exportBackup();
+      const stamp = new Date().toISOString().slice(0, 10);
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = Object.assign(document.createElement('a'), { href: url, download: `nthplay-backup-${stamp}.json` });
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      const now = new Date().toISOString();
+      try { localStorage.setItem(LAST_BACKUP_KEY, now); } catch { /* ignore */ }
+      setLast(now);
+      const n = (k: string) => (Array.isArray(data[k]) ? (data[k] as unknown[]).length : 0);
+      toast.success('Backup downloaded', `${n('bookings')} bookings, ${n('payments')} payments, ${n('profiles')} accounts.`);
+    } catch (e) {
+      toast.error("Couldn't create the backup", errorMessage(e));
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Backup</CardTitle>
+        <CardDescription>
+          Download a copy of all your data: facility settings, courts, prices, hours, customer accounts, bookings,
+          payments and the audit log. The free database plan has no automatic backups, so download one regularly
+          (for example once a week) and keep it somewhere safe, such as Google Drive.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Button onClick={() => void download()} loading={busy}>Download backup</Button>
+        <p className="text-sm text-slate-600">
+          {last ? <>Last downloaded on this device: <span className="font-medium text-ink-900">{formatDateTime(last, tz)}</span></> : 'No backup downloaded on this device yet.'}
+        </p>
+        <Alert tone="info">
+          The file contains customers' names, emails and phone numbers. Store it privately and don't share it.
+          Receipt images aren't included; they're deleted automatically 45 days after upload.
+        </Alert>
+      </CardContent>
+    </Card>
   );
 }
 

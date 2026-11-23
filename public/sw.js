@@ -2,7 +2,7 @@
 // the app shell available on flaky connections. Booking data is NEVER cached:
 // requests to Supabase (another origin) are not touched, so availability is
 // always live.
-const VERSION = 'nthplay-v1';
+const VERSION = 'nthplay-v2';
 const SHELL = ['/', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
 
 self.addEventListener('install', (event) => {

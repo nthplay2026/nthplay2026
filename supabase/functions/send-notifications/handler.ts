@@ -105,5 +105,26 @@ export async function handle(req: Request, env: Env): Promise<Response> {
       Object.assign(result, { pushes: pushes.length, push_deliveries: pushed });
     }
   }
+
+  // Once an hour: delete receipt images older than 45 days (keeps free-plan storage small).
+  // Files go through the Storage API (direct SQL deletes are blocked); the payment rows
+  // are kept and only lose their image link.
+  if (new Date().getUTCMinutes() === 7 || new URL(req.url).searchParams.has('purge')) {
+    try {
+      const paths = await rpc<string[]>('receipts_to_purge', { p_days: 45, p_limit: 100 });
+      if (paths.length) {
+        const res = await fetch(`${env('SUPABASE_URL')}/storage/v1/object/payment-proofs`, {
+          method: 'DELETE',
+          headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prefixes: paths }),
+        });
+        if (!res.ok) throw new Error(`Storage ${res.status}: ${await res.text()}`);
+        const marked = await rpc<number>('mark_receipts_purged', { p_paths: paths });
+        Object.assign(result, { receipts_deleted: paths.length, payments_updated: marked });
+      }
+    } catch (e) {
+      result.errors.push(`receipt cleanup: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
   return json(result);
 }

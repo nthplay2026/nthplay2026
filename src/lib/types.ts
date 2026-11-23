@@ -220,6 +220,8 @@ export interface Payment {
   payment_status: PaymentTxnStatus;
   transaction_reference: string | null;
   proof_of_payment_path: string | null;
+  /** Set when the receipt image was deleted (45 days after upload). */
+  receipt_purged_at?: string | null;
   provider: string | null;
   provider_payment_id: string | null;
   submitted_by: string | null;

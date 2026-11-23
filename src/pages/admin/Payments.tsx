@@ -116,6 +116,7 @@ export default function Payments() {
                             <Eye /> Proof
                           </Button>
                         )}
+                        {!p.proof_of_payment_path && p.receipt_purged_at && <span className="self-center text-xs text-slate-500">Receipt deleted after 45 days</span>}
                         {isAdmin && p.payment_status === 'pending' && <Button size="sm" loading={busy === p.id} onClick={() => verify(ps)}><Check /> Verify &amp; confirm</Button>}
                         <Button size="sm" variant="outline" onClick={() => setOpen(p.booking_id)}>Open</Button>
                       </div>

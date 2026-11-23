@@ -237,6 +237,7 @@ export function BookingPanel({ bookingId, onClose, onChanged }: { bookingId: str
                           <Eye /> View proof
                         </Button>
                       )}
+                      {!p.proof_of_payment_path && p.receipt_purged_at && <span className="self-center text-xs text-slate-500">Receipt deleted after 45 days</span>}
                       {isAdmin && !awaiting && p.payment_status === 'pending' && <>
                         <Button size="sm" loading={busy} onClick={() => void verifier.start({ ids: [p.id], amount: p.amount, currency: p.currency, proofPath: p.proof_of_payment_path })}><Check /> Verify</Button>
                         <Button size="sm" variant="danger-outline" onClick={() => { setText(''); setMode({ reject: p }); }}><Ban /> Reject</Button>

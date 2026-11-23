@@ -160,6 +160,9 @@ export const api = {
   publishQr: (method: 'gcash' | 'bank_transfer', url: string | null, password: string) =>
     rpc<{ ok: boolean; code?: string; message?: string }>('publish_payment_qr', { p_method: method, p_qr_url: url, p_password: password }),
 
+  /** Admin: every business record (settings, courts, prices, hours, customers, bookings, payments, audit log) as one object. */
+  exportBackup: () => rpc<Record<string, unknown>>('admin_export_backup'),
+
   async proofUrl(path: string): Promise<string> {
     const { data, error } = await supabase.storage.from('payment-proofs').createSignedUrl(path, 300);
     if (error || !data) throw toAppError({ message: 'Could not open the file.' });

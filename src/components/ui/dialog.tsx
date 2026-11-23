@@ -13,6 +13,9 @@ export function Dialog({ open, onClose, title, description, children, footer, si
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const descId = useId();
+  // On phones, every dialog bigger than a small confirmation fills the screen
+  // (a centred box gets clipped by the browser bars); desktop keeps the centred card.
+  const fullOnPhone = size !== 'sm';
 
   useEffect(() => {
     const d = ref.current;
@@ -31,12 +34,14 @@ export function Dialog({ open, onClose, title, description, children, footer, si
       className={cn(
         'm-auto w-[calc(100%-1.5rem)] rounded-2xl bg-white p-0 text-ink-900 shadow-lift backdrop:bg-transparent open:flex open:flex-col max-h-[calc(100dvh-2rem)]',
         { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl' }[size],
+        fullOnPhone && 'max-sm:m-0 max-sm:h-dvh max-sm:max-h-dvh max-sm:w-full max-sm:max-w-none max-sm:rounded-none max-sm:shadow-none',
         className,
       )}
     >
       {open && (
         <>
-          <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-6">
+          <div className={cn('flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-6',
+            fullOnPhone && 'max-sm:pt-[max(1rem,env(safe-area-inset-top))]')}>
             <div className="min-w-0">
               <h2 id={titleId} className="text-lg font-semibold">{title}</h2>
               {description && <p id={descId} className="mt-0.5 text-sm text-slate-600">{description}</p>}
@@ -45,8 +50,10 @@ export function Dialog({ open, onClose, title, description, children, footer, si
               <X className="size-5" />
             </button>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">{children}</div>
-          {footer && <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100 px-5 py-4 sm:px-6">{footer}</div>}
+          <div className={cn('min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6',
+            fullOnPhone && !footer && 'max-sm:pb-[max(1.25rem,env(safe-area-inset-bottom))]')}>{children}</div>
+          {footer && <div className={cn('flex flex-wrap justify-end gap-2 border-t border-slate-100 px-5 py-4 sm:px-6',
+            fullOnPhone && 'max-sm:pb-[max(1rem,env(safe-area-inset-bottom))]')}>{footer}</div>}
         </>
       )}
     </dialog>

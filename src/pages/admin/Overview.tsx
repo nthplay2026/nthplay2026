@@ -12,7 +12,7 @@ import { AdminPage } from '@/components/admin/AdminPage';
 import { BookingPanel } from '@/components/admin/BookingPanel';
 import { NewBookingDialog } from '@/components/admin/NewBookingDialog';
 import { OverviewPreview, type PreviewSpec } from '@/components/admin/OverviewPreview';
-import { groupBookings } from '@/lib/bookingGroups';
+import { groupBookings, mergeReceiptPayments } from '@/lib/bookingGroups';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, EmptyState, ErrorState, Skeleton, StatCard } from '@/components/ui/misc';
 import { BookingStatusBadge, PaymentStatusBadge } from '@/components/booking/StatusBadges';
@@ -23,7 +23,7 @@ export default function Overview() {
   const ov = useAsync(() => api.overview(today), [today]);
   const day = useAsync(() => api.bookingsBetween(zonedTimeToUtc(today, '00:00', tz).toISOString(), zonedTimeToUtc(addDays(today, 1), '00:00', tz).toISOString(),
     { statuses: ['pending', 'confirmed', 'completed', 'no_show'] }), [today, tz]);
-  const pending = useAsync(() => api.payments({ status: 'pending', page: 0, pageSize: 5 }), []);
+  const pending = useAsync(() => api.payments({ status: 'pending', page: 0, pageSize: 25 }), []);
   const [open, setOpen] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [preview, setPreview] = useState<PreviewSpec | null>(null);
@@ -33,6 +33,9 @@ export default function Overview() {
   const cur = o?.currency ?? currency;
   const nowIso = new Date().toISOString();
   const upcoming = (day.data ?? []).filter((b) => b.end_at > nowIso);
+  // One row per checkout (its time blocks listed together), and one row per receipt.
+  const upcomingGroups = groupBookings(upcoming).sort((x, y) => x.start_at.localeCompare(y.start_at));
+  const pendingReceipts = mergeReceiptPayments(pending.data?.rows ?? []).slice(0, 5);
   const dayStart = zonedTimeToUtc(today, '00:00', tz).toISOString();
   const dayEnd = zonedTimeToUtc(addDays(today, 1), '00:00', tz).toISOString();
   const groups = async (opts: Parameters<typeof api.searchBookingGroups>[0], keep?: (g: { booking_status: string }) => boolean) => {
@@ -49,11 +52,11 @@ export default function Overview() {
     pending: { title: 'Pending reservations', description: 'Awaiting payment or confirmation', link: '/admin/bookings?status=pending', linkLabel: 'Open pending bookings',
       load: () => groups({ status: 'pending', page: 0, pageSize: 25, sortAsc: true }) },
     payments: { title: 'Payments to verify', link: '/admin/payments?tab=pending', linkLabel: 'Open payments',
-      load: async () => ({ kind: 'payments', rows: (await api.payments({ status: 'pending', page: 0, pageSize: 8 })).rows }) },
+      load: async () => ({ kind: 'payments', rows: mergeReceiptPayments((await api.payments({ status: 'pending', page: 0, pageSize: 25 })).rows).slice(0, 8) }) },
     cancelled: { title: 'Cancelled bookings', description: 'Most recent first', link: '/admin/bookings?status=cancelled', linkLabel: 'Open cancelled bookings',
       load: () => groups({ status: 'cancelled', page: 0, pageSize: 25 }) },
     revenue: { title: 'Recently verified payments', link: '/admin/reports', linkLabel: 'Open reports',
-      load: async () => ({ kind: 'payments', rows: (await api.payments({ status: 'paid', page: 0, pageSize: 8 })).rows }) },
+      load: async () => ({ kind: 'payments', rows: mergeReceiptPayments((await api.payments({ status: 'paid', page: 0, pageSize: 25 })).rows).slice(0, 8) }) },
   };
 
   return (
@@ -94,17 +97,26 @@ export default function Overview() {
             <EmptyState className="mt-4 py-8" title="No more bookings today" />
           ) : (
             <ul className="mt-3 divide-y divide-slate-100">
-              {upcoming.map((b) => (
-                <li key={b.id}>
-                  <button type="button" onClick={() => setOpen(b.id)} className="flex w-full flex-wrap items-center justify-between gap-2 py-3 text-left hover:bg-slate-50">
-                    <span className="flex items-center gap-3">
-                      <span className="w-24 text-sm font-semibold tabular-nums">{formatTime(b.start_at, tz)}</span>
-                      <span><span className="font-medium">{b.customer_name}</span><span className="block text-xs text-slate-500">{b.courts?.name} · {b.booking_reference}</span></span>
-                    </span>
-                    <span className="flex gap-1.5"><BookingStatusBadge status={b.booking_status} /><PaymentStatusBadge status={b.payment_status} /></span>
-                  </button>
-                </li>
-              ))}
+              {upcomingGroups.map((g) => {
+                const first = g.bookings[0];
+                return (
+                  <li key={g.reference}>
+                    <button type="button" onClick={() => setOpen(first.id)} className="flex w-full flex-wrap items-center justify-between gap-2 py-3 text-left hover:bg-slate-50">
+                      <span className="flex items-center gap-3">
+                        <span className="w-24 text-sm font-semibold tabular-nums">{formatTime(g.start_at, tz)}</span>
+                        <span>
+                          <span className="font-medium">{first.customer_name}</span>
+                          <span className="block text-xs text-slate-500">
+                            {first.courts?.name} · {g.reference}
+                            {g.bookings.length > 1 && <> · {g.bookings.map((x) => `${formatTime(x.start_at, tz)}–${formatTime(x.end_at, tz)}`).join(', ')}</>}
+                          </span>
+                        </span>
+                      </span>
+                      <span className="flex gap-1.5"><BookingStatusBadge status={g.booking_status} /><PaymentStatusBadge status={g.payment_status} /></span>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </Card>
@@ -113,12 +125,12 @@ export default function Overview() {
             <h2 className="font-semibold">Payments awaiting verification</h2>
             <Link className="text-sm font-medium text-brand-700 hover:underline" to="/admin/payments">All payments</Link>
           </div>
-          {(pending.data?.rows ?? []).length === 0 ? <p className="mt-4 text-sm text-slate-600">Nothing to verify. 🎉</p> : (
+          {pendingReceipts.length === 0 ? <p className="mt-4 text-sm text-slate-600">Nothing to verify. 🎉</p> : (
             <ul className="mt-3 divide-y divide-slate-100">
-              {pending.data!.rows.map((p) => (
+              {pendingReceipts.map((p) => (
                 <li key={p.id}>
                   <button type="button" onClick={() => setOpen(p.booking_id)} className="flex w-full items-center justify-between gap-2 py-3 text-left text-sm hover:bg-slate-50">
-                    <span><span className="font-medium">{p.bookings?.customer_name}</span><span className="block text-xs text-slate-500">{p.payment_method.replace('_', ' ')} · ref {p.transaction_reference}</span></span>
+                    <span><span className="font-medium">{p.bookings?.customer_name}</span><span className="block text-xs text-slate-500">{p.payment_method.replace('_', ' ')} · {p.bookings?.group_ref || p.bookings?.booking_reference}{p.transaction_reference && <> · ref {p.transaction_reference}</>}</span></span>
                     <span className="font-semibold tabular-nums">{money(p.amount, p.currency)}</span>
                   </button>
                 </li>

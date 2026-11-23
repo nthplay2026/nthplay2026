@@ -82,6 +82,8 @@ export function BookingPanel({ bookingId, onClose, onChanged }: { bookingId: str
   const awaiting = grp?.booking_status === 'pending';
   const allPays = blocks.length > 1 ? groupPays.data ?? [] : pays.data ?? [];
   const pendingPays = allPays.filter((p) => p.payment_status === 'pending');
+  // A receipt covering several time blocks is one payment per block: verify/reject them together.
+  const sameReceipt = (p: Payment) => pendingPays.filter((x) => (p.proof_of_payment_path ? x.proof_of_payment_path === p.proof_of_payment_path : x.id === p.id));
   const started = b ? Date.parse(b.start_at) <= Date.now() : false;
   const live = b && (b.booking_status === 'pending' || b.booking_status === 'confirmed');
   const balance = b ? Math.max(0, b.total_amount - b.amount_paid) : 0;
@@ -239,7 +241,7 @@ export function BookingPanel({ bookingId, onClose, onChanged }: { bookingId: str
                       )}
                       {!p.proof_of_payment_path && p.receipt_purged_at && <span className="self-center text-xs text-slate-500">Receipt deleted after 45 days</span>}
                       {isAdmin && !awaiting && p.payment_status === 'pending' && <>
-                        <Button size="sm" loading={busy} onClick={() => void verifier.start({ ids: [p.id], amount: p.amount, currency: p.currency, proofPath: p.proof_of_payment_path })}><Check /> Verify</Button>
+                        <Button size="sm" loading={busy} onClick={() => { const r = sameReceipt(p); void verifier.start({ ids: r.map((x) => x.id), amount: r.reduce((s, x) => s + x.amount, 0), currency: p.currency, proofPath: p.proof_of_payment_path }); }}><Check /> Verify</Button>
                         <Button size="sm" variant="danger-outline" onClick={() => { setText(''); setMode({ reject: p }); }}><Ban /> Reject</Button>
                       </>}
                       {isAdmin && p.payment_status === 'paid' && p.refunded_amount < p.amount && (
@@ -249,7 +251,7 @@ export function BookingPanel({ bookingId, onClose, onChanged }: { bookingId: str
                     {typeof mode === 'object' && mode && 'reject' in mode && mode.reject.id === p.id && (
                       <div className="flex flex-wrap items-end gap-2">
                         <Field label="Why is it rejected?" required className="min-w-60 flex-1"><Input value={text} onChange={(e) => setText(e.target.value)} /></Field>
-                        <Button size="sm" variant="danger" loading={busy} disabled={text.trim().length < 3} onClick={() => act(() => api.reviewPayment(p.id, false, text.trim()), 'Payment rejected')}>Reject</Button>
+                        <Button size="sm" variant="danger" loading={busy} disabled={text.trim().length < 3} onClick={() => act(async () => { for (const x of sameReceipt(p)) await api.reviewPayment(x.id, false, text.trim()); }, 'Payment rejected')}>Reject</Button>
                       </div>
                     )}
                     {typeof mode === 'object' && mode && 'refund' in mode && mode.refund.id === p.id && (

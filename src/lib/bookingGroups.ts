@@ -1,6 +1,6 @@
 // Time blocks booked in one checkout share a group reference. Customers see
 // each group as one booking; staff still manage the blocks individually.
-import type { Booking, BookingStatus, PaymentStatus } from './types';
+import type { Booking, BookingStatus, Payment, PaymentStatus } from './types';
 
 export interface BookingGroup {
   reference: string;
@@ -48,4 +48,19 @@ export function groupBookings(rows: Booking[]): BookingGroup[] {
     map.get(k)!.push(b);
   }
   return [...map.values()].map(toGroup);
+}
+
+/**
+ * One receipt covering several time blocks is recorded as one payment row per block.
+ * Merges those rows into one payment (amounts added up), keeping the first row's details.
+ * Payments with no receipt image (e.g. cash) stay separate.
+ */
+export function mergeReceiptPayments<P extends Pick<Payment, 'id' | 'amount' | 'proof_of_payment_path' | 'payment_status'>>(rows: P[]): P[] {
+  const map = new Map<string, P>();
+  for (const p of rows) {
+    const k = p.proof_of_payment_path ? `${p.proof_of_payment_path}|${p.payment_status}` : p.id;
+    const cur = map.get(k);
+    map.set(k, cur ? { ...cur, amount: Number(cur.amount) + Number(p.amount) } : p);
+  }
+  return [...map.values()];
 }

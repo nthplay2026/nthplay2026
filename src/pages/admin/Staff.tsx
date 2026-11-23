@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { ShieldCheck, UserPlus } from 'lucide-react';
+import { Mail, ShieldCheck, UserPlus, X } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useAsync, useDebounced } from '@/hooks/useAsync';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
 import type { AppRole } from '@/lib/types';
+import { formatDateTime } from '@/lib/time';
+import { useFacility } from '@/hooks/useFacility';
 import { AdminPage } from '@/components/admin/AdminPage';
 import { Button } from '@/components/ui/button';
 import { Field, Input, Select } from '@/components/ui/form';
@@ -25,6 +27,33 @@ export default function Staff() {
   const debounced = useDebounced(search, 300);
   const found = useAsync(() => (debounced.trim().length >= 3 ? api.searchCustomers(debounced.trim(), 5, 0) : Promise.resolve([])), [debounced]);
   const [busy, setBusy] = useState<string | null>(null);
+  const { tz } = useFacility();
+  const invites = useAsync(() => api.staffInvites(), []);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState<'staff' | 'admin'>('staff');
+  const [inviting, setInviting] = useState(false);
+  const [inviteError, setInviteError] = useState<string | null>(null);
+
+  const invite = async () => {
+    const email = inviteEmail.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setInviteError('Enter a valid email address.'); return; }
+    setInviting(true); setInviteError(null);
+    try {
+      const r = await api.inviteStaff(email, inviteRole);
+      toast.success(r.status === 'role_set' ? `${email} is now ${inviteRole === 'admin' ? 'an admin' : 'staff'}` : 'Invitation sent',
+        r.status === 'role_set' ? 'They already had an account, so the role applies right away.' : `When they sign up with ${email}, they'll get ${inviteRole} access automatically.`);
+      setInviteEmail('');
+      await Promise.all([team.reload(), invites.reload()]);
+    } catch (e) {
+      setInviteError(errorMessage(e));
+    } finally { setInviting(false); }
+  };
+
+  const cancelInvite = async (id: string, email: string) => {
+    if (!window.confirm(`Cancel the invitation for ${email}?`)) return;
+    try { await api.cancelStaffInvite(id); toast.success('Invitation cancelled'); await invites.reload(); }
+    catch (e) { toast.error("Couldn't cancel", errorMessage(e)); }
+  };
 
   const setRole = async (id: string, role: AppRole) => {
     setBusy(id);
@@ -70,19 +99,52 @@ export default function Staff() {
         <div className="space-y-6">
           <Card>
             <CardHeader><CardTitle className="flex items-center gap-2"><UserPlus className="size-5" /> Add a team member</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-sm text-slate-600">They must first create a customer account. Then search for them here.</p>
-              <Field label="Search by email or name"><Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="name@example.com" /></Field>
-              {(found.data ?? []).filter((c) => c.role === 'customer').map((c) => (
-                <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 p-3 text-sm">
-                  <span><span className="font-medium">{c.full_name}</span><span className="block text-slate-500">{c.email}</span></span>
-                  <span className="flex gap-1.5">
-                    <Button size="sm" variant="outline" loading={busy === c.id} onClick={() => setRole(c.id, 'staff')}>Make staff</Button>
-                    <Button size="sm" loading={busy === c.id} onClick={() => setRole(c.id, 'admin')}>Make admin</Button>
-                  </span>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-slate-600">
+                Enter their email. If they already have an account, they get access right away. If not, we email them an
+                invitation, and they get access automatically when they sign up with that email.
+              </p>
+              {inviteError && <Alert tone="error">{inviteError}</Alert>}
+              <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); void invite(); }}>
+                <Field label="Email"><Input type="email" autoComplete="off" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="name@example.com" /></Field>
+                <Field label="Role">
+                  <Select value={inviteRole} onChange={(e) => setInviteRole(e.target.value as 'staff' | 'admin')}>
+                    <option value="staff">Staff</option><option value="admin">Admin</option>
+                  </Select>
+                </Field>
+                <Button type="submit" loading={inviting} className="w-full"><Mail /> Add / invite</Button>
+              </form>
+
+              {(invites.data ?? []).length > 0 && (
+                <div className="space-y-2 border-t border-slate-100 pt-4">
+                  <p className="text-sm font-semibold text-ink-900">Pending invites</p>
+                  <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200">
+                    {invites.data!.map((i) => (
+                      <li key={i.id} className="flex items-center justify-between gap-2 px-3 py-2.5 text-sm">
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium">{i.email}</span>
+                          <span className="block text-xs text-slate-500"><span className="capitalize">{i.role}</span> · invited {formatDateTime(i.created_at, tz)}{i.invited_by && <> by {i.invited_by}</>}</span>
+                        </span>
+                        <Button size="icon" variant="ghost" aria-label={`Cancel invitation for ${i.email}`} title="Cancel invitation" onClick={() => void cancelInvite(i.id, i.email)}><X /></Button>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              ))}
-              {debounced.trim().length >= 3 && found.data && found.data.filter((c) => c.role === 'customer').length === 0 && <p className="text-sm text-slate-500">No matching customer accounts.</p>}
+              )}
+
+              <div className="space-y-2 border-t border-slate-100 pt-4">
+                <Field label="Or find an existing customer by name or email"><Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search…" /></Field>
+                {(found.data ?? []).filter((c) => c.role === 'customer').map((c) => (
+                  <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 p-3 text-sm">
+                    <span><span className="font-medium">{c.full_name}</span><span className="block text-slate-500">{c.email}</span></span>
+                    <span className="flex gap-1.5">
+                      <Button size="sm" variant="outline" loading={busy === c.id} onClick={() => setRole(c.id, 'staff')}>Make staff</Button>
+                      <Button size="sm" loading={busy === c.id} onClick={() => setRole(c.id, 'admin')}>Make admin</Button>
+                    </span>
+                  </div>
+                ))}
+                {debounced.trim().length >= 3 && found.data && found.data.filter((c) => c.role === 'customer').length === 0 && <p className="text-sm text-slate-500">No matching customer accounts.</p>}
+              </div>
             </CardContent>
           </Card>
           <Card>

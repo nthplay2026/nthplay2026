@@ -78,6 +78,8 @@ export function render(n: NotificationRow, appUrl: string): Email {
   let extra = '';
   let cta = link;
   let to = 'customer';
+  let ctaText = '';
+  let showDetails = true;
 
   switch (n.notification_type) {
     case 'booking_confirmed':
@@ -129,19 +131,31 @@ export function render(n: NotificationRow, appUrl: string): Email {
         p.transaction_reference ? ` (reference ${p.transaction_reference})` : ''}. Verify it to confirm the booking.`;
       cta = adminLink;
       break;
+    case 'staff_invite': {
+      const roleWord = p.role === 'admin' ? 'an administrator' : 'a staff member';
+      subject = `You're invited to join ${facility}`;
+      intro = p.invited_by
+        ? `Hi! ${p.invited_by} has invited you to join ${facility} as ${roleWord}.`
+        : `Hi! You have been invited to join ${facility} as ${roleWord}.`;
+      extra = `Create your account with this email address (${p.email ?? n.recipient_email}). You'll have ${p.role === 'admin' ? 'admin' : 'staff'} access as soon as you sign in.`;
+      cta = appUrl ? `${appUrl.replace(/\/$/, '')}/register` : '';
+      ctaText = 'Create your account';
+      showDetails = false;
+      break;
+    }
     default:
       subject = `Update on booking ${ref}`;
       intro = `There's an update on your booking.`;
   }
 
   const contact = [p.facility_phone, p.facility_email].filter(Boolean).join(' · ');
-  const ctaLabel = to === 'admin' ? 'Open in admin' : 'View booking';
+  const ctaLabel = ctaText || (to === 'admin' ? 'Open in admin' : 'View booking');
   const site = appUrl ? appUrl.replace(/\/$/, '') : 'https://www.nthplay.club';
   const font = 'font-family:Arial, Helvetica, sans-serif;';
   // Same look as the sign-up / password-reset emails (supabase/templates/*.html):
   // cream page, white card, dark-brown header with the logo, olive button, cream footer.
   // Label above value: reads well on narrow phone screens.
-  const rows = details.map(([k, , h]) =>
+  const rows = (showDetails ? details : []).map(([k, , h]) =>
     `<tr><td style="padding:12px 0;border-top:1px solid #eadbc9;${font}"><div style="font-size:12px;color:#7d6957;text-transform:uppercase;letter-spacing:.04em">${esc(k)}</div><div style="margin-top:3px;font-size:15px;line-height:1.5;font-weight:bold;color:#2d1c12">${h}</div></td></tr>`).join('');
   const html = `<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${esc(subject)}</title></head>
@@ -175,7 +189,7 @@ export function render(n: NotificationRow, appUrl: string): Email {
   </td></tr>
 </table>
 </body></html>`;
-  const text = [subject, '', intro, extra, '', ...details.map(([k, v]) => (v.includes('\n') ? `${k}:\n${v}` : `${k}: ${v}`)), '', cta ? `${to === 'admin' ? 'Open in admin' : 'View booking'}: ${cta}` : '', contact ? `${facility} · ${contact}` : '']
+  const text = [subject, '', intro, extra, '', ...(showDetails ? details : []).map(([k, v]) => (v.includes('\n') ? `${k}:\n${v}` : `${k}: ${v}`)), '', cta ? `${ctaLabel}: ${cta}` : '', contact ? `${facility} · ${contact}` : '']
     .filter((l, i, a) => !(l === '' && a[i - 1] === '')).join('\n');
   return { subject, html, text };
 }

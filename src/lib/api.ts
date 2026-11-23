@@ -5,6 +5,15 @@ import { groupBookings, type BookingGroup } from './bookingGroups';
 import { toAppError, unwrap } from './errors';
 import { prepareReceipt } from './image';
 
+/** A pending staff invitation (Admin > Staff & permissions). */
+export interface StaffInvite {
+  id: string;
+  email: string;
+  role: 'staff' | 'admin';
+  invited_by: string | null;
+  created_at: string;
+}
+
 /** Admin backup settings (Settings > Backup). */
 export interface BackupStatus {
   reminder_days: number | null;
@@ -356,6 +365,11 @@ export const api = {
   },
 
   setUserRole: (userId: string, role: AppRole) => rpc<void>('set_user_role', { p_user: userId, p_role: role }),
+  /** Gives the role right away if the email has an account; otherwise saves an invite and emails it. */
+  inviteStaff: (email: string, role: 'staff' | 'admin') =>
+    rpc<{ status: 'role_set' | 'invited' }>('admin_invite_staff', { p_email: email, p_role: role }),
+  staffInvites: () => rpc<StaffInvite[]>('admin_staff_invites'),
+  cancelStaffInvite: (id: string) => rpc<void>('admin_cancel_staff_invite', { p_id: id }),
 
   // ---------------------------------------------------------------- admin --
   adminSettings: () => rpc<FacilitySettings>('admin_get_settings'),

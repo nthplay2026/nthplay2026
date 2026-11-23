@@ -26,7 +26,7 @@ function AuthShell({ title, subtitle, children, footer }: { title: string; subti
     <div className="container-page flex justify-center py-12 sm:py-16">
       <div className="w-full max-w-md">
         <div className="mb-6 text-center">
-          <BrandMark className="mx-auto size-16 rounded-2xl" />
+          <BrandMark label="Nth Play" className="mx-auto h-32 w-24 rounded-2xl shadow-card" />
           <h1 className="mt-4 text-2xl font-bold text-ink-900 sm:text-3xl">{title}</h1>
           {subtitle && <p className="mt-2 text-slate-600">{subtitle}</p>}
         </div>

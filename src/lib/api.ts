@@ -43,7 +43,7 @@ const num = (v: unknown) => (v == null ? v : Number(v));
 export const api = {
   async settings(): Promise<FacilitySettings> {
     const data = unwrap(await supabase.from('facility_settings').select(
-      'id, facility_name, tagline, description, timezone, currency, slot_minutes, booking_interval_minutes, min_duration_minutes, max_duration_minutes, buffer_minutes, min_advance_minutes, max_advance_days, same_day_cutoff, cancellation_deadline_hours, reschedule_deadline_hours, hold_minutes, booking_confirmation_mode, payment_due_hours, allow_cross_midnight, reminder_hours_before, contact_email, contact_phone, address, map_url, amenities, payment_methods, push_public_key, updated_at',
+      'id, facility_name, tagline, description, timezone, currency, slot_minutes, booking_interval_minutes, min_duration_minutes, max_duration_minutes, buffer_minutes, min_advance_minutes, max_advance_days, same_day_cutoff, cancellation_deadline_hours, reschedule_deadline_hours, hold_minutes, booking_confirmation_mode, payment_due_hours, allow_cross_midnight, reminder_hours_before, contact_email, contact_phone, address, map_url, amenities, payment_methods, push_public_key, terms_content, terms_updated_at, privacy_content, privacy_updated_at, updated_at',
     ).eq('id', 1).single());
     return data as unknown as FacilitySettings;
   },
@@ -373,6 +373,8 @@ export const api = {
 
   // ---------------------------------------------------------------- admin --
   adminSettings: () => rpc<FacilitySettings>('admin_get_settings'),
+  /** Saves the Terms or Privacy text; null restores the built-in default. */
+  updateLegalPage: (page: 'terms' | 'privacy', content: string | null) => rpc<void>('admin_update_legal_page', { p_page: page, p_content: content }),
 
   async saveSettings(patch: Partial<FacilitySettings>) {
     const { id: _id, updated_at: _u, ...rest } = patch;

@@ -13,23 +13,101 @@ import { Checkbox, Field, Input, Select, Textarea } from '@/components/ui/form';
 import { Alert, Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, ErrorState, Pagination, Skeleton, Tabs } from '@/components/ui/misc';
 import { useToast } from '@/components/ui/toast';
 import { PaymentQrCodes } from '@/components/admin/PaymentQrCodes';
+import { LegalText } from '@/components/layout/LegalText';
+import { defaultPrivacyText, defaultTermsText } from '@/lib/legal';
 
 export default function SettingsPage() {
-  type Tab = 'facility' | 'payments' | 'email' | 'audit' | 'backup';
+  type Tab = 'facility' | 'payments' | 'legal' | 'email' | 'audit' | 'backup';
   const [params] = useSearchParams();
   const fromLink = params.get('tab');
-  const [tab, setTab] = useState<Tab>((['facility', 'payments', 'email', 'audit', 'backup'] as const).find((x) => x === fromLink) ?? 'facility');
+  const [tab, setTab] = useState<Tab>((['facility', 'payments', 'legal', 'email', 'audit', 'backup'] as const).find((x) => x === fromLink) ?? 'facility');
   useEffect(() => { if (fromLink === 'backup') setTab('backup'); }, [fromLink]);
   return (
     <AdminPage title="Settings" description="Facility details, payment methods, email delivery, the audit log and backups.">
       <Tabs label="Settings section" value={tab} onChange={setTab} className="mb-5"
-        items={[{ value: 'facility', label: 'Facility' }, { value: 'payments', label: 'Payment methods' }, { value: 'email', label: 'Email log' }, { value: 'audit', label: 'Audit log' }, { value: 'backup', label: 'Backup' }]} />
+        items={[{ value: 'facility', label: 'Facility' }, { value: 'payments', label: 'Payment methods' }, { value: 'legal', label: 'Legal pages' }, { value: 'email', label: 'Email log' }, { value: 'audit', label: 'Audit log' }, { value: 'backup', label: 'Backup' }]} />
       {tab === 'facility' && <FacilityForm />}
       {tab === 'payments' && <PaymentMethods />}
       {tab === 'email' && <EmailLog />}
       {tab === 'audit' && <AuditLog />}
+      {tab === 'legal' && <LegalPages />}
       {tab === 'backup' && <Backup />}
     </AdminPage>
+  );
+}
+
+/** Edit the Terms & booking policy and the Privacy policy shown on the website. */
+function LegalPages() {
+  const { settings, reload } = useFacility();
+  const toast = useToast();
+  const { tz } = useFacility();
+  const [page, setPage] = useState<'terms' | 'privacy'>('terms');
+  const saved = page === 'terms' ? settings?.terms_content : settings?.privacy_content;
+  const updatedAt = page === 'terms' ? settings?.terms_updated_at : settings?.privacy_updated_at;
+  const fallback = page === 'terms' ? defaultTermsText(settings) : defaultPrivacyText(settings);
+  const [text, setText] = useState('');
+  const [preview, setPreview] = useState(false);
+  const [busy, setBusy] = useState(false);
+  // Load the page's current text (the admin's version, or the default) when switching pages.
+  useEffect(() => { setText(saved || fallback); setPreview(false); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, saved]);
+
+  const dirty = text.trim() !== (saved || fallback).trim();
+  const title = page === 'terms' ? 'Terms & booking policy' : 'Privacy policy';
+
+  const save = async (content: string | null) => {
+    setBusy(true);
+    try {
+      await api.updateLegalPage(page, content);
+      await reload();
+      toast.success(content === null ? `${title}: default text restored` : `${title} saved`, 'The website shows it now.');
+    } catch (e) {
+      toast.error("Couldn't save", errorMessage(e));
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Legal pages</CardTitle>
+        <CardDescription>
+          Edit what customers read on the Terms & booking policy and Privacy policy pages. Have someone familiar with
+          Philippine law (including the Data Privacy Act) review the final wording.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Tabs label="Legal page" value={page} onChange={setPage}
+          items={[{ value: 'terms', label: 'Terms & booking policy' }, { value: 'privacy', label: 'Privacy policy' }]} />
+        <p className="text-sm text-slate-600">
+          {saved ? <>Your edited version · last updated <span className="font-medium text-ink-900">{formatDateTime(updatedAt ?? '', tz)}</span></>
+            : 'Showing the built-in default text. Edit and save to make it yours.'}
+          {' '}<a href={page === 'terms' ? '/terms' : '/privacy'} target="_blank" rel="noreferrer" className="font-medium text-brand-700 hover:underline">View page</a>
+        </p>
+        <div className="flex gap-2">
+          <Button size="sm" variant={preview ? 'outline' : 'primary'} onClick={() => setPreview(false)}>Edit</Button>
+          <Button size="sm" variant={preview ? 'primary' : 'outline'} onClick={() => setPreview(true)}>Preview</Button>
+        </div>
+        {preview ? (
+          <div className="max-h-[60vh] space-y-5 overflow-y-auto rounded-xl border border-slate-200 bg-white p-5 leading-relaxed text-ink-800 [&_h2]:mt-6 [&_h2]:text-lg [&_h2]:font-semibold [&_li]:ml-5 [&_li]:list-disc [&_ul]:space-y-1.5">
+            <LegalText text={text} />
+          </div>
+        ) : (
+          <Field label={title} hint='Formatting: start a line with "## " for a heading and "- " for a bullet point. Leave an empty line between paragraphs.'>
+            <Textarea rows={20} value={text} onChange={(e) => setText(e.target.value)} maxLength={30000} className="font-mono text-sm leading-relaxed" />
+          </Field>
+        )}
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => void save(text)} loading={busy} disabled={!dirty || !text.trim()}>Save {page === 'terms' ? 'terms' : 'privacy policy'}</Button>
+          {dirty && <Button variant="ghost" onClick={() => setText(saved || fallback)}>Discard changes</Button>}
+          {saved && (
+            <Button variant="danger-outline" className="ml-auto" disabled={busy}
+              onClick={() => { if (window.confirm('Replace your version with the built-in default text?')) void save(null); }}>
+              Restore default text
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

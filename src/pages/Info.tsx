@@ -1,8 +1,9 @@
-import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { CheckCircle2, Clock, ExternalLink, Mail, MapPin } from 'lucide-react';
 import { useFacility } from '@/hooks/useFacility';
-import { dayOfWeek, formatDuration } from '@/lib/time';
+import { dayOfWeek, formatDateLong } from '@/lib/time';
+import { defaultPrivacyText, defaultTermsText } from '@/lib/legal';
+import { LegalText } from '@/components/layout/LegalText';
 import { buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/misc';
 import { HoursTable } from '@/components/booking/HoursTable';
@@ -55,84 +56,31 @@ export function ContactPage() {
   );
 }
 
-function Legal({ title, updated, children }: { title: string; updated: string; children: ReactNode }) {
+function Legal({ title, updated, text }: { title: string; updated: string | null; text: string }) {
+  const { tz } = useFacility();
   return (
     <div className="container-page max-w-3xl py-10 sm:py-14">
       <h1 className="text-3xl font-bold text-ink-900 sm:text-4xl">{title}</h1>
-      <p className="mt-2 text-sm text-slate-500">Last updated {updated}</p>
-      <div className="mt-8 space-y-6 leading-relaxed text-ink-800 [&_h2]:mt-8 [&_h2]:text-xl [&_h2]:font-semibold [&_li]:ml-5 [&_li]:list-disc [&_ul]:space-y-1.5">{children}</div>
+      {updated && <p className="mt-2 text-sm text-slate-500">Last updated {formatDateLong(updated, tz)}</p>}
+      <div className="mt-8 space-y-6 leading-relaxed text-ink-800 [&_h2]:mt-8 [&_h2]:text-xl [&_h2]:font-semibold [&_li]:ml-5 [&_li]:list-disc [&_ul]:space-y-1.5">
+        <LegalText text={text} />
+      </div>
     </div>
   );
 }
 
+/** Admin-edited text (Settings > Legal pages), or the built-in default. */
 export function TermsPage() {
   const { settings } = useFacility();
-  const s = settings;
-  const name = s?.facility_name ?? 'the facility';
-  return (
-    <Legal title="Terms & booking policy" updated="October 2026">
-      <p>These terms apply to every court reservation made with {name}. By booking you agree to them. The facility owner should review this text and adapt it to local law before going live.</p>
-      <h2>Reservations</h2>
-      <ul>
-        <li>Bookings can be made up to {s?.max_advance_days ?? 30} days in advance and at least {s ? formatDuration(s.min_advance_minutes) : '1 hour'} before the start time.</li>
-        <li>Sessions run from {s ? formatDuration(s.min_duration_minutes) : '1 hour'} to {s ? formatDuration(s.max_duration_minutes) : '3 hours'}.</li>
-        <li>When you select a time we hold it for {s?.hold_minutes ?? 10} minutes while you check out. Unconfirmed holds are released automatically.</li>
-        <li>A booking is only valid once you receive a booking reference on screen and by email.</li>
-      </ul>
-      <h2>Payment</h2>
-      <ul>
-        {s?.booking_confirmation_mode === 'after_payment'
-          ? <li>Reservations stay pending until payment is verified and must be paid within {s.payment_due_hours} hours (or before the session starts, whichever is sooner). Unpaid reservations are released.</li>
-          : <li>Reservations are confirmed immediately. Payment is due before your session starts.</li>}
-        <li>GCash payments are marked paid only after our staff check your receipt against our records.</li>
-        <li>Prices shown at checkout are final for that booking; later price changes do not affect existing bookings.</li>
-      </ul>
-      <h2>Changes and cancellations</h2>
-      <ul>
-        <li>Bookings can't be cancelled or moved online. Payments aren't refunded for change of plans.</li>
-        <li>To reschedule, contact the facility. We'll move your booking to another available time, and the price is recalculated for the new time.</li>
-        <li>If we have to close the court (for example for safety, maintenance or weather), we'll offer you a new time or a full refund.</li>
-      </ul>
-      <h2>On court</h2>
-      <ul>
-        <li>Arriving 10 minutes before your scheduled booking is recommended to ensure you make the most of your time. Please note that late arrivals will not be given an extension beyond the booked end time.</li>
-        <li>Non-marking court shoes are required. Players use the facility at their own risk.</li>
-      </ul>
-    </Legal>
-  );
+  return <Legal title="Terms & booking policy" updated={settings?.terms_content ? settings.terms_updated_at ?? null : null}
+    text={settings?.terms_content || defaultTermsText(settings)} />;
 }
 
 export function PrivacyPage() {
   const { settings } = useFacility();
-  return (
-    <Legal title="Privacy policy" updated="October 2026">
-      <p>{settings?.facility_name ?? 'We'} collect only what we need to run your bookings. The facility owner should review this policy against applicable data-protection law (for example, the Philippine Data Privacy Act of 2012) before going live.</p>
-      <h2>What we collect</h2>
-      <ul>
-        <li>Account details: name, email address, mobile number and a securely hashed password.</li>
-        <li>Booking details: court, date and time, notes, price and status.</li>
-        <li>Payment details you submit: method, amount and a photo of your receipt. We never collect or store card numbers.</li>
-      </ul>
-      <h2>How we use it</h2>
-      <ul>
-        <li>To reserve courts, send confirmations, reminders and changes, and verify payments.</li>
-        <li>To keep an audit trail of changes to bookings and payments, and to prevent abuse.</li>
-        <li>To produce aggregated reports (for example, how busy each court is).</li>
-      </ul>
-      <h2>Who can see it</h2>
-      <ul>
-        <li>Only you and authorised facility staff can see your bookings. Other customers only see whether a time is free.</li>
-        <li>We use service providers for hosting (Supabase) and email delivery; they process data on our behalf.</li>
-      </ul>
-      <h2>Your choices</h2>
-      <ul>
-        <li>You can update your name and mobile number in your account at any time.</li>
-        <li>To access or delete your data, contact us{settings?.contact_email ? ` at ${settings.contact_email}` : ''}. Booking and payment records may be kept as required for accounting.</li>
-      </ul>
-    </Legal>
-  );
+  return <Legal title="Privacy policy" updated={settings?.privacy_content ? settings.privacy_updated_at ?? null : null}
+    text={settings?.privacy_content || defaultPrivacyText(settings)} />;
 }
-
 export function NotFoundPage() {
   return (
     <div className="container-page py-24 text-center">

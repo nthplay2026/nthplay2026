@@ -35,6 +35,11 @@ export interface FacilitySettings {
   id: number;
   /** Public key browsers use to subscribe to push notifications. */
   push_public_key?: string | null;
+  /** Admin-edited legal pages (null = built-in default text). */
+  terms_content?: string | null;
+  terms_updated_at?: string | null;
+  privacy_content?: string | null;
+  privacy_updated_at?: string | null;
   facility_name: string;
   tagline: string;
   description: string;

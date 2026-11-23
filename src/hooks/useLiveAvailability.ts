@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
 import type { AvailabilitySlot } from '@/lib/types';
 import { addDays } from '@/lib/time';
+import { watchTopic } from '@/lib/liveTopics';
 
 export type LiveStatus = 'connecting' | 'live' | 'reconnecting';
 
@@ -16,8 +17,9 @@ const TAKEN = new Set(['held', 'pending', 'booked', 'blocked', 'unavailable']);
  * Live slot grid for one facility-local date.
  *
  * Source of truth is always the server (`get_availability`). Realtime only
- * tells us *when* to refetch: any change to `slot_locks` for this date (a
- * hold, booking, cancellation, block or expiry) triggers a debounced reload.
+ * tells us *when* to refetch: the database broadcasts every slot change for a
+ * date (a hold, booking, cancellation, block or expiry), which triggers a
+ * debounced reload.
  * If the socket drops we poll until it reconnects, then reload once more so
  * nothing is missed. Responses that arrive out of order are discarded.
  */
@@ -83,32 +85,37 @@ export function useLiveAvailability(dateOrDates: string | string[] | null, court
     void load('initial');
   }, [load]);
 
-  // Realtime subscription scoped to this date.
+  // Live updates for these dates. The database broadcasts "availability:<date>"
+  // on every slot change; one shared channel per date fans out to all viewers,
+  // which scales to many people watching at once (each just reloads its grid).
   useEffect(() => {
     if (!date) return;
-    let channel: RealtimeChannel | null = null;
-    let everSubscribed = false;
     setStatus('connecting');
     const dates = date.split(',');
     // Include the day before: a booking that starts late can run past midnight into the first date.
     const watched = [addDays(dates[0], -1), ...dates];
-    channel = supabase.channel(`availability:${dates[0]}+${dates.length}:${courtId ?? 'all'}:${Math.random().toString(36).slice(2, 8)}`);
-    channel.on('postgres_changes', { event: '*', schema: 'public', table: 'slot_locks', filter: `local_date=in.(${watched.join(',')})` }, scheduleReload);
-    for (const t of extra ? extra.split(',') : []) {
-      channel.on('postgres_changes', { event: '*', schema: 'public', table: t }, scheduleReload);
+    const ok = new Map<string, boolean>();
+    const stops = watched.map((d) => watchTopic(`availability:${d}`, {
+      onChange: scheduleReload,
+      onStatus: (up, reconnected) => {
+        ok.set(d, up);
+        const allUp = watched.every((x) => ok.get(x));
+        setStatus(allUp ? 'live' : up ? 'connecting' : 'reconnecting');
+        // After a reconnect, catch up on anything missed while offline.
+        if (up && reconnected) scheduleReload();
+      },
+    }));
+
+    // Staff screens also follow booking/payment rows (few viewers, so row changes are fine).
+    let channel: RealtimeChannel | null = null;
+    if (extra) {
+      channel = supabase.channel(`staff-availability:${dates[0]}+${dates.length}:${courtId ?? 'all'}:${Math.random().toString(36).slice(2, 8)}`);
+      for (const t of extra.split(',')) channel.on('postgres_changes', { event: '*', schema: 'public', table: t }, scheduleReload);
+      channel.subscribe();
     }
-    channel.subscribe((s) => {
-      if (s === 'SUBSCRIBED') {
-        setStatus('live');
-        // After a reconnect, catch up on anything we missed while offline.
-        if (everSubscribed) scheduleReload();
-        everSubscribed = true;
-      } else if (s === 'CHANNEL_ERROR' || s === 'TIMED_OUT' || s === 'CLOSED') {
-        setStatus('reconnecting');
-      }
-    });
     return () => {
       if (debounce.current) clearTimeout(debounce.current);
+      stops.forEach((stop) => stop());
       if (channel) void supabase.removeChannel(channel);
     };
   }, [date, courtId, extra, scheduleReload]);
@@ -117,7 +124,7 @@ export function useLiveAvailability(dateOrDates: string | string[] | null, court
   // (also turns slots into "past" and drops expired holds as time passes).
   useEffect(() => {
     if (!date) return;
-    const t = setInterval(() => { void load('poll'); }, status === 'live' ? 60_000 : 10_000);
+    const t = setInterval(() => { void load('poll'); }, status === 'live' ? 30_000 : 10_000);
     return () => clearInterval(t);
   }, [date, status, load]);
 

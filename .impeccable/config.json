@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "arial",
+        "createdAt": "2026-11-23T08:45:35.181Z",
+        "reason": "Claude: email HTML needs a web-safe font stack (clients don't load web fonts); Arial matches the existing auth email templates"
+      }
+    ]
+  }
+}

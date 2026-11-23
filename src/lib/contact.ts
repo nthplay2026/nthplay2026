@@ -1,9 +1,5 @@
-/**
- * The facility's Facebook page ("Nth Play"). Customers message the page from there via Messenger.
- * TODO: replace with the page's exact link (facebook.com/<page>) once confirmed; until then this
- * opens a Facebook search for the page name.
- */
-export const FACEBOOK_URL = 'https://www.facebook.com/search/pages/?q=Nth%20Play';
+/** The facility's Facebook page ("Nth Play"). Customers message the page from there via Messenger. */
+export const FACEBOOK_URL = 'https://www.facebook.com/NthPlayPickleballCourt';
 export const FACEBOOK_NAME = 'Nth Play';
 
 /** Instagram account. */

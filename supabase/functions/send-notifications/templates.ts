@@ -54,7 +54,7 @@ export function render(n: NotificationRow, appUrl: string): Email {
     ? days.map(([d, times]) => [d, ...times.map((t) => `  ${t}`)].join('\n')).join('\n')
     : p.when_local ? String(p.when_local).split('; ').join('\n') : `${p.start_local} – ${p.end_local}`;
   const whenHtml = days
-    ? days.map(([d, times]) => `<div style="margin-top:6px">${esc(d)}</div>${times.map((t) => `<div style="font-weight:500;color:#334155">${esc(t)}</div>`).join('')}`).join('')
+    ? days.map(([d, times]) => `<div style="margin-top:6px">${esc(d)}</div>${times.map((t) => `<div style="font-weight:normal;color:#4b3d32">${esc(t)}</div>`).join('')}`).join('')
     : esc(whenText).replace(/\n/g, '<br>');
   // The payload is captured a moment before the booking's payment status updates,
   // so a "payment verified" email always says Paid.
@@ -135,20 +135,46 @@ export function render(n: NotificationRow, appUrl: string): Email {
   }
 
   const contact = [p.facility_phone, p.facility_email].filter(Boolean).join(' · ');
+  const ctaLabel = to === 'admin' ? 'Open in admin' : 'View booking';
+  const site = appUrl ? appUrl.replace(/\/$/, '') : 'https://www.nthplay.club';
+  const font = 'font-family:Arial, Helvetica, sans-serif;';
+  // Same look as the sign-up / password-reset emails (supabase/templates/*.html):
+  // cream page, white card, dark-brown header with the logo, olive button, cream footer.
   // Label above value: reads well on narrow phone screens.
   const rows = details.map(([k, , h]) =>
-    `<tr><td style="padding:10px 0;border-top:1px solid #e2e8f0"><div style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.04em">${esc(k)}</div><div style="margin-top:2px;font-size:15px;line-height:1.5;font-weight:600;color:#0f172a">${h}</div></td></tr>`).join('');
-  const html = `<!doctype html><html><body style="margin:0;background:#f8fafc;font-family:Segoe UI,Roboto,Helvetica,Arial,sans-serif">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:20px 10px">
-<table role="presentation" width="100%" style="max-width:560px;background:#ffffff;border-radius:16px;padding:24px;border:1px solid #e2e8f0">
-<tr><td style="font-size:14px;font-weight:700;color:#15803d;letter-spacing:.04em;text-transform:uppercase">${esc(facility)}</td></tr>
-<tr><td style="padding-top:12px;font-size:20px;line-height:1.3;font-weight:700;color:#0f172a">${esc(subject.split(' · ')[0])}</td></tr>
-<tr><td style="padding-top:12px;font-size:15px;line-height:1.6;color:#334155">${esc(intro)}</td></tr>
-${extra ? `<tr><td style="padding-top:8px;font-size:15px;line-height:1.6;color:#334155">${esc(extra)}</td></tr>` : ''}
-<tr><td style="padding-top:16px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows}</table></td></tr>
-${cta ? `<tr><td style="padding-top:24px"><a href="${esc(cta)}" style="display:inline-block;background:#16a34a;color:#fff;text-decoration:none;padding:12px 20px;border-radius:10px;font-weight:600">${to === 'admin' ? 'Open in admin' : 'View booking'}</a></td></tr>` : ''}
-${contact ? `<tr><td style="padding-top:28px;font-size:13px;color:#64748b">${esc(facility)} · ${esc(contact)}</td></tr>` : ''}
-</table></td></tr></table></body></html>`;
+    `<tr><td style="padding:12px 0;border-top:1px solid #eadbc9;${font}"><div style="font-size:12px;color:#7d6957;text-transform:uppercase;letter-spacing:.04em">${esc(k)}</div><div style="margin-top:3px;font-size:15px;line-height:1.5;font-weight:bold;color:#2d1c12">${h}</div></td></tr>`).join('');
+  const html = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${esc(subject)}</title></head>
+<body style="margin:0; padding:0; background-color:#fbf5ee;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#fbf5ee;">
+  <tr><td align="center" style="padding:32px 16px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px; background-color:#ffffff; border-radius:16px; overflow:hidden; border:1px solid #eadbc9;">
+      <tr><td style="background-color:#2d1c12; padding:24px 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+          <td style="vertical-align:middle;"><img src="${esc(site)}/brand/logo-mark.png" width="64" height="64" alt="${esc(facility)}" style="display:block; border-radius:10px; border:0;" /></td>
+          <td style="vertical-align:middle; padding-left:12px; ${font} font-size:20px; font-weight:bold; color:#ffffff;">${esc(facility)}</td>
+        </tr></table>
+      </td></tr>
+      <tr><td style="padding:32px; ${font} color:#2d1c12;">
+        <h1 style="margin:0 0 12px; font-size:22px; line-height:1.3;">${esc(subject.split(' · ')[0])}</h1>
+        <p style="margin:0 0 ${extra ? '8' : '20'}px; font-size:15px; line-height:1.6; color:#4b3d32;">${esc(intro)}</p>
+        ${extra ? `<p style="margin:0 0 20px; font-size:15px; line-height:1.6; color:#4b3d32;">${esc(extra)}</p>` : ''}
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows}</table>
+        ${cta ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:24px;"><tr>
+          <td style="border-radius:10px; background-color:#56704a;"><a href="${esc(cta)}" style="display:inline-block; padding:14px 28px; ${font} font-size:15px; font-weight:bold; color:#ffffff; text-decoration:none; border-radius:10px;">${ctaLabel}</a></td>
+        </tr></table>
+        <p style="margin:24px 0 0; font-size:13px; line-height:1.6; color:#7d6957;">If the button doesn't work, copy and paste this link into your browser:<br /><a href="${esc(cta)}" style="color:#8c553b; word-break:break-all;">${esc(cta)}</a></p>` : ''}
+      </td></tr>
+      <tr><td style="padding:20px 32px; background-color:#f5ebdf; ${font} font-size:12px; line-height:1.6; color:#7d6957;">
+        ${esc(facility)} &middot; Open 6 AM &ndash; 10 PM daily${contact ? ` &middot; ${esc(contact)}` : ''}<br />
+        <a href="${esc(site)}" style="color:#8c553b; text-decoration:none;">${esc(site.replace(/^https?:\/\//, ''))}</a>
+        &middot; <a href="https://www.facebook.com/NthPlayPickleballCourt" style="color:#8c553b; text-decoration:none;">Facebook</a>
+        &middot; <a href="https://www.instagram.com/nthplay/" style="color:#8c553b; text-decoration:none;">Instagram @nthplay</a>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
   const text = [subject, '', intro, extra, '', ...details.map(([k, v]) => (v.includes('\n') ? `${k}:\n${v}` : `${k}: ${v}`)), '', cta ? `${to === 'admin' ? 'Open in admin' : 'View booking'}: ${cta}` : '', contact ? `${facility} · ${contact}` : '']
     .filter((l, i, a) => !(l === '' && a[i - 1] === '')).join('\n');
   return { subject, html, text };

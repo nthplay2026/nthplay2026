@@ -4,6 +4,13 @@ import { supabase } from './supabase';
 import { groupBookings, type BookingGroup } from './bookingGroups';
 import { toAppError, unwrap } from './errors';
 import { prepareReceipt } from './image';
+
+/** Admin backup settings (Settings > Backup). */
+export interface BackupStatus {
+  reminder_days: number | null;
+  last_backup_at: string | null;
+  next_due_at: string | null;
+}
 import type {
   AppRole, AuditLog, AvailabilitySlot, BlockedSlot, Booking, BookingOption, BookingResult, BookingStatus, ConflictResult, Court, CustomerRow, FacilitySettings, Hold, NotificationRow, OperatingHours, Overview, Payment, PaymentMethod, PaymentStatus, PricingRule, Profile, Quote, Report, SpecialHours, UserNotification,
 } from './types';
@@ -162,6 +169,9 @@ export const api = {
 
   /** Admin: every business record (settings, courts, prices, hours, customers, bookings, payments, audit log) as one object. */
   exportBackup: () => rpc<Record<string, unknown>>('admin_export_backup'),
+  backupStatus: () => rpc<BackupStatus>('admin_backup_status'),
+  /** null turns reminders off. */
+  setBackupReminder: (days: number | null) => rpc<BackupStatus>('admin_set_backup_reminder', { p_days: days }),
 
   async proofUrl(path: string): Promise<string> {
     const { data, error } = await supabase.storage.from('payment-proofs').createSignedUrl(path, 300);

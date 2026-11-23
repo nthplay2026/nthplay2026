@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { useFacility } from '@/hooks/useFacility';
 import { useAsync } from '@/hooks/useAsync';
 import { api } from '@/lib/api';
@@ -8,13 +9,17 @@ import { paymentMethodLabel } from '@/lib/format';
 import type { FacilitySettings, PaymentMethodConfig } from '@/lib/types';
 import { AdminPage } from '@/components/admin/AdminPage';
 import { Button } from '@/components/ui/button';
-import { Checkbox, Field, Input, Textarea } from '@/components/ui/form';
+import { Checkbox, Field, Input, Select, Textarea } from '@/components/ui/form';
 import { Alert, Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, ErrorState, Pagination, Skeleton, Tabs } from '@/components/ui/misc';
 import { useToast } from '@/components/ui/toast';
 import { PaymentQrCodes } from '@/components/admin/PaymentQrCodes';
 
 export default function SettingsPage() {
-  const [tab, setTab] = useState<'facility' | 'payments' | 'email' | 'audit' | 'backup'>('facility');
+  type Tab = 'facility' | 'payments' | 'email' | 'audit' | 'backup';
+  const [params] = useSearchParams();
+  const fromLink = params.get('tab');
+  const [tab, setTab] = useState<Tab>((['facility', 'payments', 'email', 'audit', 'backup'] as const).find((x) => x === fromLink) ?? 'facility');
+  useEffect(() => { if (fromLink === 'backup') setTab('backup'); }, [fromLink]);
   return (
     <AdminPage title="Settings" description="Facility details, payment methods, email delivery, the audit log and backups.">
       <Tabs label="Settings section" value={tab} onChange={setTab} className="mb-5"
@@ -28,14 +33,27 @@ export default function SettingsPage() {
   );
 }
 
-const LAST_BACKUP_KEY = 'nthplay:last-backup';
+const REMINDER_OPTIONS: { value: string; label: string }[] = [
+  { value: 'off', label: 'Off' },
+  { value: '3', label: 'Every 3 days' },
+  { value: '7', label: 'Every week' },
+  { value: '14', label: 'Every 2 weeks' },
+  { value: '30', label: 'Every month' },
+];
 
-/** Downloads every business record as one JSON file (the free database plan has no automatic backups). */
+/**
+ * Downloads every business record as one JSON file (the free database plan has no automatic
+ * backups) and sets how often admins are reminded to do it. Reminders come from the server:
+ * a "Time to back up" notification (bell + phone) at 9:00 AM while a backup is due.
+ */
 function Backup() {
   const toast = useToast();
   const { tz } = useFacility();
+  const status = useAsync(() => api.backupStatus(), []);
   const [busy, setBusy] = useState(false);
-  const [last, setLast] = useState<string | null>(() => { try { return localStorage.getItem(LAST_BACKUP_KEY); } catch { return null; } });
+  const [saving, setSaving] = useState(false);
+  const [choice, setChoice] = useState<string>('7');
+  useEffect(() => { if (status.data) setChoice(status.data.reminder_days == null ? 'off' : String(status.data.reminder_days)); }, [status.data]);
 
   const download = async () => {
     setBusy(true);
@@ -49,15 +67,28 @@ function Backup() {
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      const now = new Date().toISOString();
-      try { localStorage.setItem(LAST_BACKUP_KEY, now); } catch { /* ignore */ }
-      setLast(now);
       const n = (k: string) => (Array.isArray(data[k]) ? (data[k] as unknown[]).length : 0);
       toast.success('Backup downloaded', `${n('bookings')} bookings, ${n('payments')} payments, ${n('profiles')} accounts.`);
+      void status.reload();
     } catch (e) {
       toast.error("Couldn't create the backup", errorMessage(e));
     } finally { setBusy(false); }
   };
+
+  const saveReminder = async () => {
+    setSaving(true);
+    try {
+      await api.setBackupReminder(choice === 'off' ? null : Number(choice));
+      toast.success(choice === 'off' ? 'Backup reminders turned off' : 'Backup reminder saved');
+      void status.reload();
+    } catch (e) {
+      toast.error("Couldn't save the reminder", errorMessage(e));
+    } finally { setSaving(false); }
+  };
+
+  const st = status.data;
+  const saved = st ? (st.reminder_days == null ? 'off' : String(st.reminder_days)) : null;
+  const overdue = !!st?.next_due_at && Date.parse(st.next_due_at) <= Date.now();
 
   return (
     <Card>
@@ -66,14 +97,52 @@ function Backup() {
         <CardDescription>
           Download a copy of all your data: facility settings, courts, prices, hours, customer accounts, bookings,
           payments and the audit log. The free database plan has no automatic backups, so download one regularly
-          (for example once a week) and keep it somewhere safe, such as Google Drive.
+          and keep it somewhere safe, such as Google Drive.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <Button onClick={() => void download()} loading={busy}>Download backup</Button>
-        <p className="text-sm text-slate-600">
-          {last ? <>Last downloaded on this device: <span className="font-medium text-ink-900">{formatDateTime(last, tz)}</span></> : 'No backup downloaded on this device yet.'}
-        </p>
+      <CardContent className="space-y-6">
+        {status.loading && !st ? <Skeleton className="h-20" /> : status.error ? <ErrorState message={status.error} onRetry={() => void status.reload()} /> : (
+          <>
+            {overdue && (
+              <Alert tone="warning">
+                {st?.last_backup_at ? 'A new backup is due.' : 'No backup has been downloaded yet.'} Download one now to keep your data safe.
+              </Alert>
+            )}
+            <div className="space-y-2">
+              <Button onClick={() => void download()} loading={busy}>Download backup</Button>
+              <p className="text-sm text-slate-600">
+                {st?.last_backup_at
+                  ? <>Last backup: <span className="font-medium text-ink-900">{formatDateTime(st.last_backup_at, tz)}</span> (by any admin, on any device)</>
+                  : 'No backup downloaded yet.'}
+              </p>
+            </div>
+
+            <div className="space-y-3 border-t border-slate-100 pt-5">
+              <div>
+                <h3 className="font-semibold text-ink-900">Backup reminder</h3>
+                <p className="text-sm text-slate-600">
+                  When a backup is due, every admin gets a "Time to back up" notification at 9:00 AM, in the bell and
+                  on their phone if phone alerts are on. It repeats each morning until someone downloads a backup.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-end gap-3">
+                <Field label="Remind me" className="w-56">
+                  <Select value={choice} onChange={(e) => setChoice(e.target.value)}>
+                    {REMINDER_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    {saved && !REMINDER_OPTIONS.some((o) => o.value === saved) && <option value={saved}>Every {saved} days</option>}
+                  </Select>
+                </Field>
+                <Button variant="outline" onClick={() => void saveReminder()} loading={saving} disabled={choice === saved}>Save reminder</Button>
+              </div>
+              {st?.reminder_days != null && st.next_due_at && (
+                <p className="text-sm text-slate-600">
+                  {overdue ? 'Next reminder: tomorrow at 9:00 AM, unless a backup is downloaded first.'
+                    : <>Next backup due: <span className="font-medium text-ink-900">{formatDateTime(st.next_due_at, tz)}</span></>}
+                </p>
+              )}
+            </div>
+          </>
+        )}
         <Alert tone="info">
           The file contains customers' names, emails and phone numbers. Store it privately and don't share it.
           Receipt images aren't included; they're deleted automatically 45 days after upload.
@@ -82,7 +151,6 @@ function Backup() {
     </Card>
   );
 }
-
 function useAdminSettings() {
   const q = useAsync(() => api.adminSettings(), []);
   const [form, setForm] = useState<FacilitySettings | null>(null);

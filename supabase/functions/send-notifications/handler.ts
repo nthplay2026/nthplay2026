@@ -125,6 +125,23 @@ export async function handle(req: Request, env: Env): Promise<Response> {
     } catch (e) {
       result.errors.push(`receipt cleanup: ${e instanceof Error ? e.message : String(e)}`);
     }
+
+    // Court photos are never deleted by age, only when no court uses them any more
+    // (replaced/removed photos the admin's browser couldn't delete).
+    try {
+      const orphans = await rpc<string[]>('court_photos_to_purge', { p_limit: 100 });
+      if (orphans.length) {
+        const res = await fetch(`${env('SUPABASE_URL')}/storage/v1/object/court-photos`, {
+          method: 'DELETE',
+          headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prefixes: orphans }),
+        });
+        if (!res.ok) throw new Error(`Storage ${res.status}: ${await res.text()}`);
+        Object.assign(result, { unused_court_photos_deleted: orphans.length });
+      }
+    } catch (e) {
+      result.errors.push(`court photo cleanup: ${e instanceof Error ? e.message : String(e)}`);
+    }
   }
   return json(result);
 }

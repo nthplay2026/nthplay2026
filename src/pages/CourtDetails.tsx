@@ -13,6 +13,7 @@ import { HoursTable } from '@/components/booking/HoursTable';
 import { LiveIndicator } from '@/components/booking/LiveIndicator';
 import { RateList, lowestRate } from '@/components/booking/RateList';
 import { isVideoUrl } from '@/components/booking/CourtVisual';
+import { CourtGallery } from '@/components/booking/CourtGallery';
 
 export default function CourtDetailsPage() {
   const { id = '' } = useParams();
@@ -39,11 +40,13 @@ export default function CourtDetailsPage() {
       <Link to="/" className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-ink-900"><ArrowLeft className="size-4" /> All courts</Link>
       <div className="grid gap-8 lg:grid-cols-[1.3fr_1fr]">
         <div>
+          {c.photos?.length ? <CourtGallery photos={c.photos} name={c.name} /> : (
           <div className={isVideoUrl(c.image_url)
             ? 'mx-auto aspect-[9/16] w-full max-w-sm overflow-hidden rounded-3xl bg-slate-100 shadow-card'
             : 'aspect-[5/3] overflow-hidden rounded-3xl bg-slate-100 shadow-card'}>
             <CourtImage src={c.image_url} type={c.court_type} name={c.name} />
           </div>
+          )}
           <h1 className="mt-6 text-3xl font-bold text-ink-900 sm:text-4xl">{c.name}</h1>
           {!c.name.toLowerCase().includes(c.court_type) && <p className="mt-1 capitalize text-slate-500">{c.court_type} court</p>}
           <p className="mt-4 leading-relaxed text-ink-800">{c.description}</p>

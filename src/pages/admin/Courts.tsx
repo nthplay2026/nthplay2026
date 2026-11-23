@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pencil, Plus, Power, Trash2 } from 'lucide-react';
+import { Images, Pencil, Plus, Power, Trash2 } from 'lucide-react';
 import { useFacility } from '@/hooks/useFacility';
 import { useAsync } from '@/hooks/useAsync';
 import { api } from '@/lib/api';
@@ -15,6 +15,7 @@ import { Field, Input, Select, Textarea } from '@/components/ui/form';
 import { Alert, Badge, Card, ErrorState, Skeleton } from '@/components/ui/misc';
 import { useToast } from '@/components/ui/toast';
 import { CourtImage } from '@/components/booking/CourtVisual';
+import { CourtPhotosDialog } from '@/components/admin/CourtPhotos';
 
 interface Draft {
   id?: string; name: string; description: string; court_type: CourtType; image_url: string; base_hourly_rate: string;
@@ -31,6 +32,7 @@ export default function Courts() {
   const [formError, setFormError] = useState<string | null>(null);
   const [conflict, setConflict] = useState<{ court: Court; list: ConflictBooking[] } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [photosFor, setPhotosFor] = useState<Court | null>(null);
 
   const refresh = async () => { await q.reload(); await reloadFacility(); };
 
@@ -101,7 +103,7 @@ export default function Courts() {
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {q.data!.map((c) => (
             <Card key={c.id} className={c.is_active ? 'overflow-hidden' : 'overflow-hidden opacity-75'}>
-              <div className="aspect-[5/2] bg-slate-100"><CourtImage src={c.image_url} type={c.court_type} name={c.name} /></div>
+              <div className="aspect-[5/2] bg-slate-100"><CourtImage src={c.photos?.[0]?.url ?? c.image_url} type={c.court_type} name={c.name} /></div>
               <div className="p-5">
                 <div className="flex items-start justify-between gap-2">
                   <div>
@@ -117,6 +119,7 @@ export default function Courts() {
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Button size="sm" variant="outline" onClick={() => edit(c)}><Pencil /> Edit</Button>
+                  <Button size="sm" variant="outline" onClick={() => setPhotosFor(c)}><Images /> Photos{c.photos?.length ? ` (${c.photos.length})` : ''}</Button>
                   <Button size="sm" variant={c.is_active ? 'danger-outline' : 'primary'} loading={busy === c.id} onClick={() => toggle(c)}>
                     <Power /> {c.is_active ? 'Deactivate' : 'Activate'}
                   </Button>
@@ -148,6 +151,8 @@ export default function Courts() {
           </div>
         )}
       </Dialog>
+
+      {photosFor && <CourtPhotosDialog key={photosFor.id} court={photosFor} open onClose={() => setPhotosFor(null)} onChanged={refresh} />}
 
       <ConflictDialog open={!!conflict} conflicts={conflict?.list ?? []} onClose={() => setConflict(null)} busy={busy === conflict?.court.id}
         title={`Deactivate ${conflict?.court.name}?`}

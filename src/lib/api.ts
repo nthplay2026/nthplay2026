@@ -12,7 +12,7 @@ export interface BackupStatus {
   next_due_at: string | null;
 }
 import type {
-  AppRole, AuditLog, AvailabilitySlot, BlockedSlot, Booking, BookingOption, BookingResult, BookingStatus, ConflictResult, Court, CustomerRow, FacilitySettings, Hold, NotificationRow, OperatingHours, Overview, Payment, PaymentMethod, PaymentStatus, PricingRule, Profile, Quote, Report, SpecialHours, UserNotification,
+  AppRole, AuditLog, AvailabilitySlot, BlockedSlot, Booking, BookingOption, BookingResult, BookingStatus, ConflictResult, Court, CourtPhoto, CustomerRow, FacilitySettings, Hold, NotificationRow, OperatingHours, Overview, Payment, PaymentMethod, PaymentStatus, PricingRule, Profile, Quote, Report, SpecialHours, UserNotification,
 } from './types';
 
 /** Fired when the server rejects the session (expired / revoked JWT). */
@@ -168,6 +168,32 @@ export const api = {
     rpc<{ ok: boolean; code?: string; message?: string }>('publish_payment_qr', { p_method: method, p_qr_url: url, p_password: password }),
 
   /** Admin: every business record (settings, courts, prices, hours, customers, bookings, payments, audit log) as one object. */
+  /** Admin: resizes a court photo (long edge 2000 px, JPEG) and uploads it. Not saved to the court until setCourtPhotos. */
+  async uploadCourtPhoto(courtId: string, file: File): Promise<CourtPhoto> {
+    if (!/^image\/(jpeg|png|webp|heic|heif)$/i.test(file.type) && !/\.(jpe?g|png|webp|heic|heif)$/i.test(file.name)) {
+      throw toAppError({ message: 'Use a JPG, PNG or WebP photo.' });
+    }
+    const img = await prepareReceipt(file, 2000);
+    if (img.size > 8 * 1024 * 1024) throw toAppError({ message: 'That photo is too large (over 8 MB after resizing).' });
+    const ext = img.type === 'image/png' ? 'png' : img.type === 'image/webp' ? 'webp' : 'jpg';
+    const path = `${courtId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const { error } = await supabase.storage.from('court-photos').upload(path, img, { contentType: img.type, upsert: false, cacheControl: '31536000' });
+    if (error) throw toAppError({ message: error.message });
+    return { path, url: supabase.storage.from('court-photos').getPublicUrl(path).data.publicUrl };
+  },
+
+  /** Admin: saves the court's photo list (display order) and deletes files that are no longer used. */
+  async setCourtPhotos(courtId: string, photos: CourtPhoto[]): Promise<void> {
+    const unused = await rpc<string[]>('admin_set_court_photos', { p_court: courtId, p_photos: photos });
+    // Best effort: an hourly sweep deletes anything left behind.
+    if (unused.length) await supabase.storage.from('court-photos').remove(unused).catch(() => {});
+  },
+
+  /** Admin: deletes uploaded files that were never saved to a court (e.g. a cancelled upload). */
+  async discardCourtPhotoFiles(paths: string[]) {
+    if (paths.length) await supabase.storage.from('court-photos').remove(paths).catch(() => {});
+  },
+
   exportBackup: () => rpc<Record<string, unknown>>('admin_export_backup'),
   backupStatus: () => rpc<BackupStatus>('admin_backup_status'),
   /** null turns reminders off. */

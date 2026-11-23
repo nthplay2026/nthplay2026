@@ -7,6 +7,7 @@ import { money } from '@/lib/format';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, Skeleton } from '@/components/ui/misc';
 import { CourtImage } from '@/components/booking/CourtVisual';
+import { CourtGallery } from '@/components/booking/CourtGallery';
 import { RateList, rateRows } from '@/components/booking/RateList';
 import { InstallBanner } from '@/components/layout/InstallApp';
 
@@ -65,11 +66,15 @@ export default function HomePage() {
       {/* Intro + court(s) */}
       {single ? (
         <section className="container-page py-16 sm:py-20" aria-labelledby="courts-heading">
+          {/* Uploaded court photos (Admin > Courts > Photos); nothing is shown when there are none. */}
+          <CourtGallery photos={single.photos ?? []} name={single.name} className="mb-10" />
           <div className="grid max-w-3xl items-start gap-8">
-            {/* On large screens the video is in the hero; on phones show it here. */}
-            <div className="mx-auto aspect-[9/16] w-full max-w-xs overflow-hidden rounded-3xl shadow-lift lg:hidden">
-              <CourtImage src={single.image_url} type={single.court_type} name={single.name} />
-            </div>
+            {/* On large screens the illustration is in the hero; on phones show it here, unless there are photos. */}
+            {!(single.photos?.length) && (
+              <div className="mx-auto aspect-[9/16] w-full max-w-xs overflow-hidden rounded-3xl shadow-lift lg:hidden">
+                <CourtImage src={single.image_url} type={single.court_type} name={single.name} />
+              </div>
+            )}
             <div>
               <p className="text-sm font-semibold uppercase tracking-wide text-brand-700">Our court</p>
               <h2 id="courts-heading" className="mt-1 text-3xl font-bold text-ink-900 sm:text-4xl">{single.name}</h2>
@@ -106,7 +111,7 @@ export default function HomePage() {
           {loading ? Array.from({ length: 3 }, (_, i) => <Skeleton key={i} className="h-80" />) : courts.map((c) => (
             <Card key={c.id} className="group overflow-hidden">
               <Link to={`/courts/${c.id}`} className="block aspect-[5/3] overflow-hidden bg-slate-100" tabIndex={-1} aria-hidden>
-                <CourtImage src={c.image_url} type={c.court_type} name={c.name} className="transition-transform duration-500 group-hover:scale-105" />
+                <CourtImage src={c.photos?.[0]?.url ?? c.image_url} type={c.court_type} name={c.name} className="transition-transform duration-500 group-hover:scale-105" />
               </Link>
               <div className="p-5">
                 <div className="flex items-start justify-between gap-3">

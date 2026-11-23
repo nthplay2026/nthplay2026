@@ -78,8 +78,16 @@ export interface Court {
   max_advance_days: number | null;
   sort_order: number;
   features: string[];
+  /** Uploaded photos in display order (empty = none). */
+  photos: CourtPhoto[];
   created_at: string;
   updated_at: string;
+}
+
+export interface CourtPhoto {
+  /** Storage path in the court-photos bucket: <court id>/<file>. */
+  path: string;
+  url: string;
 }
 
 export interface PricingRule {

@@ -38,6 +38,15 @@ export async function handle(req: Request, env: Env): Promise<Response> {
   const apiBase = env('RESEND_API_BASE') ?? 'https://api.resend.com';
   const appUrl = env('APP_URL') ?? '';
   const rpc = serviceRpc(env);
+  // The admin's names for payment methods (renamable in Settings), used in emails.
+  const methodNames: Record<string, string> = {};
+  try {
+    const r = await fetch(`${env('SUPABASE_URL')}/rest/v1/facility_settings?select=payment_methods&id=eq.1`, {
+      headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+    });
+    const rows = (await r.json()) as { payment_methods?: { method: string; label?: string }[] }[];
+    for (const m of rows?.[0]?.payment_methods ?? []) if (m.label?.trim()) methodNames[m.method] = m.label.trim();
+  } catch { /* fall back to the built-in names */ }
 
   const reminders = await rpc<number>('enqueue_reminders');
   const batch = await rpc<NotificationRow[]>('claim_notifications', { p_limit: 25 });
@@ -58,7 +67,7 @@ export async function handle(req: Request, env: Env): Promise<Response> {
         continue;
       }
 
-      const email = render(n, appUrl);
+      const email = render(n, appUrl, methodNames);
       if (gmail) {
         await gmail.send(n.recipient_email, email.subject, email.html, email.text);
         await rpc('complete_notification', { p_id: n.id, p_success: true, p_provider_message_id: `gmail:${n.idempotency_key}` });

@@ -287,7 +287,7 @@ export default function BookPage() {
                   {user ? <>Reserve {hoursLabel} <ArrowRight /></> : <><LogIn /> Log in to reserve</>}
                 </Button>
                 <p className="text-center text-xs text-slate-500">
-                  We'll hold these slots for {settings?.hold_minutes ?? 10} minutes while you pay with GCash.
+                  We'll hold these slots for {settings?.hold_minutes ?? 10} minutes while you pay.
                 </p>
               </div>
             )}

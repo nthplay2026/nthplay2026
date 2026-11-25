@@ -8,7 +8,8 @@ import { useStaffFeed } from '@/hooks/useStaffFeed';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
 import { formatDateTime } from '@/lib/time';
-import { money, paymentMethodLabel } from '@/lib/format';
+import { money } from '@/lib/format';
+import { useMethodName } from '@/hooks/useMethodName';
 import type { Payment } from '@/lib/types';
 import { AdminPage } from '@/components/admin/AdminPage';
 import { BookingPanel } from '@/components/admin/BookingPanel';
@@ -25,6 +26,7 @@ export default function Payments() {
   const { isAdmin } = useAuth();
   const { tz } = useFacility();
   const toast = useToast();
+  const methodLabel = useMethodName();
   const [params] = useSearchParams();
   const [tab, setTab] = useState<Tab>((params.get('tab') as Tab | null) ?? 'pending');
   const [page, setPage] = useState(0);
@@ -63,7 +65,7 @@ export default function Payments() {
   };
 
   return (
-    <AdminPage title="Payments" description="Verify manual payments against your bank / GCash records. Customers can never mark their own payments as paid.">
+    <AdminPage title="Payments" description="Verify manual payments against your payment records. Customers can never mark their own payments as paid.">
       {!isAdmin && <Alert tone="info" className="mb-4">Only administrators can verify, reject or refund payments. Staff can record cash received at the desk from a booking.</Alert>}
       <Tabs label="Payment status" value={tab} onChange={(v) => { setTab(v); setPage(0); }}
         items={[{ value: 'pending', label: 'To verify' }, { value: 'paid', label: 'Verified' }, { value: 'failed', label: 'Rejected' }, { value: 'refunded', label: 'Refunded' }, { value: '', label: 'All' }]} />
@@ -98,7 +100,7 @@ export default function Payments() {
                         <span className="block text-xs text-slate-500">{p.bookings?.customer_name} · booking total {money(bookingTotal, p.currency)}{ps.length > 1 && ` · ${ps.length} time blocks`}</span>
                       </button>
                     </td>
-                    <td className="px-4 py-3">{paymentMethodLabel[p.payment_method]}<span className="block font-mono text-xs text-slate-500">{p.transaction_reference ?? p.provider_payment_id ?? '—'}</span></td>
+                    <td className="px-4 py-3">{methodLabel(p.payment_method)}<span className="block font-mono text-xs text-slate-500">{p.transaction_reference ?? p.provider_payment_id ?? '—'}</span></td>
                     <td className="whitespace-nowrap px-4 py-3 text-right font-semibold tabular-nums">{money(amount, p.currency)}</td>
                     <td className="px-4 py-3">
                       <PaymentTxnBadge status={p.payment_status} />

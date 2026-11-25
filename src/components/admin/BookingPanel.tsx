@@ -6,7 +6,8 @@ import { useAsync } from '@/hooks/useAsync';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
 import { formatDateLong, formatDateTime, formatDuration, formatTime } from '@/lib/time';
-import { money, paymentMethodLabel } from '@/lib/format';
+import { money } from '@/lib/format';
+import { useMethodName } from '@/hooks/useMethodName';
 import { toGroup } from '@/lib/bookingGroups';
 import { describeBookingAudit } from '@/lib/activity';
 import { cn } from '@/lib/utils';
@@ -28,6 +29,7 @@ export function BookingPanel({ bookingId, onClose, onChanged }: { bookingId: str
   const { isAdmin } = useAuth();
   const { tz } = useFacility();
   const toast = useToast();
+  const methodLabel = useMethodName();
   // Blocks booked together are one booking: the panel shows the group and one block at a time.
   const [currentId, setCurrentId] = useState(bookingId);
   useEffect(() => setCurrentId(bookingId), [bookingId]);
@@ -168,7 +170,7 @@ export function BookingPanel({ bookingId, onClose, onChanged }: { bookingId: str
             <div><dt className="text-slate-500">Paid</dt><dd className="font-medium">{money(b.amount_paid, b.currency)}</dd></div>
             <div><dt className="text-slate-500">Email</dt><dd className="truncate font-medium">{b.customer_email ?? '—'}</dd></div>
             <div><dt className="text-slate-500">Mobile</dt><dd className="font-medium">{b.customer_phone ?? '—'}</dd></div>
-            <div><dt className="text-slate-500">Method</dt><dd className="font-medium">{b.payment_method ? paymentMethodLabel[b.payment_method] : '—'}</dd></div>
+            <div><dt className="text-slate-500">Method</dt><dd className="font-medium">{methodLabel(b.payment_method)}</dd></div>
             <div><dt className="text-slate-500">Booked</dt><dd className="font-medium">{formatDateTime(b.created_at, tz)}</dd></div>
             {b.payment_due_at && b.booking_status === 'pending' && <div><dt className="text-slate-500">Payment due</dt><dd className="font-medium">{formatDateTime(b.payment_due_at, tz)}</dd></div>}
             {b.notes && <div className="col-span-full"><dt className="text-slate-500">Notes</dt><dd className="font-medium">{b.notes}</dd></div>}
@@ -225,7 +227,7 @@ export function BookingPanel({ bookingId, onClose, onChanged }: { bookingId: str
                   <li key={p.id} className="space-y-2 px-4 py-3 text-sm">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div>
-                        <p className="font-medium">{paymentMethodLabel[p.payment_method]} · {money(p.amount, p.currency)}{p.refunded_amount > 0 && <span className="text-violet-700"> (refunded {money(p.refunded_amount, p.currency)})</span>}</p>
+                        <p className="font-medium">{methodLabel(p.payment_method)} · {money(p.amount, p.currency)}{p.refunded_amount > 0 && <span className="text-violet-700"> (refunded {money(p.refunded_amount, p.currency)})</span>}</p>
                         <p className="text-xs text-slate-500">{p.transaction_reference && <>Ref {p.transaction_reference} · </>}{formatDateTime(p.created_at, tz)}{p.review_note && <> · {p.review_note}</>}</p>
                         {p.verified_by && verifierName(p.verified_by) && (
                           <p className="text-xs text-slate-500">{p.payment_status === 'failed' ? 'Rejected' : 'Verified'} by <span className="font-medium text-ink-800">{verifierName(p.verified_by)}</span>{p.verified_at && <> · {formatDateTime(p.verified_at, tz)}</>}</p>
@@ -257,7 +259,7 @@ export function BookingPanel({ bookingId, onClose, onChanged }: { bookingId: str
                     {typeof mode === 'object' && mode && 'refund' in mode && mode.refund.id === p.id && (
                       <div className="grid gap-2 sm:grid-cols-[140px_1fr_auto] sm:items-end">
                         <Field label="Amount"><Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} /></Field>
-                        <Field label="Refund note" required><Input value={text} onChange={(e) => setText(e.target.value)} placeholder="e.g. GCash refund ref 123" /></Field>
+                        <Field label="Refund note" required><Input value={text} onChange={(e) => setText(e.target.value)} placeholder="e.g. Refund ref 123" /></Field>
                         <Button size="sm" loading={busy} disabled={!(Number(amount) > 0) || text.trim().length < 3} onClick={() => act(() => api.refundPayment(p.id, Number(amount), text.trim()), 'Refund recorded')}>Record refund</Button>
                       </div>
                     )}

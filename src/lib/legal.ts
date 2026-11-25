@@ -19,7 +19,7 @@ export function defaultTermsText(s: FacilitySettings | null | undefined): string
     payFirst
       ? '- Reservations stay pending until our staff verify your payment. Please pay and upload your receipt during checkout; unpaid reservations are released.'
       : '- Reservations are confirmed immediately. Payment is due before your session starts.',
-    '- GCash payments are marked paid only after our staff check your receipt against our records.',
+    '- QR code payments are marked paid only after our staff check your receipt against our records.',
     '- Prices shown at checkout are final for that booking; later price changes do not affect existing bookings.',
     '',
     '## Changes and cancellations',

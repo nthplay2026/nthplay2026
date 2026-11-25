@@ -8,7 +8,8 @@ import { api } from '@/lib/api';
 import { toGroup } from '@/lib/bookingGroups';
 import { supabase } from '@/lib/supabase';
 import { formatDateTime } from '@/lib/time';
-import { money, paymentMethodLabel } from '@/lib/format';
+import { money } from '@/lib/format';
+import { useMethodName } from '@/hooks/useMethodName';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Alert, Card, CardContent, CardHeader, CardTitle, EmptyState, PageLoader } from '@/components/ui/misc';
 import { SummaryRow } from '@/components/booking/Summary';
@@ -22,6 +23,7 @@ export default function BookingDetailsPage() {
   const { reference = '' } = useParams();
   const { user } = useAuth();
   const { settings, tz } = useFacility();
+  const methodLabel = useMethodName();
   const q = useAsync(() => api.bookingGroup(reference), [reference]);
   const ids = (q.data ?? []).map((b) => b.id);
   const idsKey = ids.join(',');
@@ -104,7 +106,7 @@ export default function BookingDetailsPage() {
               extra={<>
                 <SummaryRow label="Name">{b.customer_name}</SummaryRow>
                 {b.notes && <SummaryRow label="Notes">{b.notes}</SummaryRow>}
-                <SummaryRow label="Payment method">{b.payment_method ? paymentMethodLabel[b.payment_method] : '—'}</SummaryRow>
+                <SummaryRow label="Payment method">{methodLabel(b.payment_method)}</SummaryRow>
                 <SummaryRow label="Paid so far">{money(g.paid, g.currency)}</SummaryRow>
               </>} />
           </Card>
@@ -119,7 +121,7 @@ export default function BookingDetailsPage() {
                   {pays.data!.map((p) => (
                     <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
                       <div>
-                        <p className="font-medium">{paymentMethodLabel[p.payment_method]} · {money(p.amount, p.currency)}</p>
+                        <p className="font-medium">{methodLabel(p.payment_method)} · {money(p.amount, p.currency)}</p>
                         <p className="text-xs text-slate-500">
                           {p.transaction_reference ? <>Ref {p.transaction_reference} · </> : p.proof_of_payment_path ? <>Receipt uploaded · </> : null}submitted {formatDateTime(p.created_at, tz)}
                           {p.review_note && p.payment_status === 'failed' && <> · {p.review_note}</>}

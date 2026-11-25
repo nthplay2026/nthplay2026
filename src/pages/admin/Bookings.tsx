@@ -6,7 +6,8 @@ import { useAsync, useDebounced } from '@/hooks/useAsync';
 import { useStaffFeed } from '@/hooks/useStaffFeed';
 import { api } from '@/lib/api';
 import { addDays, formatDateLong, formatDateTime, formatTime, zonedTimeToUtc } from '@/lib/time';
-import { bookingStatusLabel, money, paymentMethodLabel, paymentStatusLabel } from '@/lib/format';
+import { bookingStatusLabel, money, paymentStatusLabel } from '@/lib/format';
+import { useMethodName } from '@/hooks/useMethodName';
 import { groupBookings, groupRef } from '@/lib/bookingGroups';
 import { errorMessage } from '@/lib/errors';
 import type { Booking, BookingStatus, PaymentStatus } from '@/lib/types';
@@ -24,6 +25,7 @@ const PAGE = 25;
 export default function Bookings() {
   const { courts, tz } = useFacility();
   const toast = useToast();
+  const methodLabel = useMethodName();
   const [params, setParams] = useSearchParams();
   const [search, setSearch] = useState(params.get('ref') ?? '');
   const debounced = useDebounced(search, 300);
@@ -73,7 +75,7 @@ export default function Bookings() {
       const groups = groupBookings(all).sort((x, y) => x.start_at.localeCompare(y.start_at));
       const head = (labels: string[]) => labels.map((value) => ({ value, fontWeight: 'bold' as const }));
       const text = (v: string | number | null | undefined) => ({ value: v ?? undefined });
-      const method = (b: Booking) => (b.payment_method ? paymentMethodLabel[b.payment_method] : '');
+      const method = (b: Booking) => (b.payment_method ? methodLabel(b.payment_method) : '');
 
       const bookingsSheet = [
         head(['Reference', 'Court', 'Date', 'Time blocks', 'Blocks', 'Hours', 'Status', 'Payment status', 'Method', 'Total', 'Paid', 'Currency', 'Customer', 'Email', 'Mobile', 'Created']),

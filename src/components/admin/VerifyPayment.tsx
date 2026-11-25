@@ -65,7 +65,7 @@ export function useVerifyPayment(onVerified: () => void) {
 
   const dialog = (
     <Dialog open={!!target} onClose={() => void cancel()} size="md" title="Verify payment & confirm booking"
-      description={target ? `Check that ${money(target.amount, target.currency)} arrived in your GCash / bank account, then confirm.` : undefined}>
+      description={target ? `Check that ${money(target.amount, target.currency)} arrived in your account, then confirm.` : undefined}>
       {target && (
         <div className="space-y-4">
           {target.proofPath && (proof === null ? <Skeleton className="h-72" /> : proof ? (

@@ -331,7 +331,7 @@ function PaymentMethods() {
       {form.payment_methods.map((m, i) => (
         <Card key={m.method}>
           <CardHeader className="flex-row items-center justify-between">
-            <div><CardTitle>{paymentMethodLabel[m.method]}</CardTitle>
+            <div><CardTitle>{m.label?.trim() || paymentMethodLabel[m.method]}</CardTitle>
               <CardDescription>
                 {m.method === 'cash' && 'Customer pays at the front desk; staff record it from the booking.'}
                 {(m.method === 'gcash' || m.method === 'bank_transfer') && 'Customer pays outside the app and submits the reference; an admin verifies it.'}
@@ -342,7 +342,9 @@ function PaymentMethods() {
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <Checkbox label="Offer this method" checked={m.enabled} disabled={m.method === 'gateway' && !m.enabled} onChange={(e) => upd(i, { enabled: e.target.checked })} className="sm:col-span-2" />
-            <Field label="Label shown to customers"><Input value={m.label} onChange={(e) => upd(i, { label: e.target.value })} /></Field>
+            <Field label="Payment method name" hint={`Shown to customers and staff everywhere: checkout, booking details, payments and emails. E.g. rename ${paymentMethodLabel[m.method]} to GoTyme.`}>
+              <Input value={m.label} maxLength={40} placeholder={paymentMethodLabel[m.method]} onChange={(e) => upd(i, { label: e.target.value })} />
+            </Field>
             {(m.method === 'gcash' || m.method === 'bank_transfer') && <>
               <div className="flex items-center gap-3 sm:col-span-2">
                 {m.qr_url

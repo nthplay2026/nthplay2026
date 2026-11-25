@@ -133,7 +133,7 @@ export function QrPayment({ methods, selected, onSelect, amount, currency = 'PHP
         )}
       </Dialog>
       <ol className="list-decimal space-y-1.5 rounded-xl bg-slate-50 py-3 pl-9 pr-4 text-slate-700">
-        <li>{choosable ? 'Choose a QR code and scan it' : 'Scan the QR code'} with GCash, Maya or your bank's app. On your phone, tap <strong>Save QR image</strong> and use <strong>Upload QR</strong> in the app.</li>
+        <li>{choosable ? 'Choose a QR code and scan it' : 'Scan the QR code'} with your e-wallet or banking app. On your phone, tap <strong>Save QR image</strong> and use <strong>Upload QR</strong> in the app.</li>
         {amount != null && <li>Pay exactly <strong className="text-ink-900">{money(amount, currency)}</strong>.</li>}
         <li>Take a <strong>screenshot of your receipt</strong> and upload it below.</li>
       </ol>

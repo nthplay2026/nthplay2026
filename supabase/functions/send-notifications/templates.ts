@@ -40,7 +40,8 @@ function byDay(blocks: Block[]): [string, string[]][] {
   return days;
 }
 
-export function render(n: NotificationRow, appUrl: string): Email {
+/** methodNames: the admin's names for payment methods (Settings > Payment methods), e.g. { gcash: 'GoTyme' }. */
+export function render(n: NotificationRow, appUrl: string, methodNames: Record<string, string> = {}): Email {
   const p = n.payload as Record<string, string | number | null>;
   const facility = String(p.facility_name ?? "Nth Play");
   const ref = String(p.booking_reference ?? '');
@@ -127,7 +128,7 @@ export function render(n: NotificationRow, appUrl: string): Email {
     case 'admin_payment_submitted':
       to = 'admin';
       subject = `Payment to verify · ${ref}`;
-      intro = `${p.customer_name} uploaded a ${METHOD_WORDS[String(p.payment_method)] ?? label(p.payment_method)} receipt for ${money(p.payment_amount, p.currency)}${
+      intro = `${p.customer_name} uploaded a ${methodNames[String(p.payment_method)] || METHOD_WORDS[String(p.payment_method)] || label(p.payment_method)} receipt for ${money(p.payment_amount, p.currency)}${
         p.transaction_reference ? ` (reference ${p.transaction_reference})` : ''}. Verify it to confirm the booking.`;
       cta = adminLink;
       break;

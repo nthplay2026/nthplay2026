@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
  * Pick a photo or screenshot of the payment receipt (camera or gallery),
  * with a preview. The parent uploads it when the form is submitted.
  */
-export function ReceiptInput({ value, onChange, error, label = 'Photo of your GCash receipt' }: {
+export function ReceiptInput({ value, onChange, error, label = 'Photo of your payment receipt' }: {
   value: File | null; onChange: (f: File | null) => void; error?: string | null; label?: string;
 }) {
   const id = useId();
@@ -55,7 +55,7 @@ export function ReceiptInput({ value, onChange, error, label = 'Photo of your GC
             message ? 'border-red-400 bg-red-50/40' : 'border-slate-300 bg-white')}>
           <ImagePlus className="size-7 text-brand-700" aria-hidden />
           <span className="text-sm font-semibold text-ink-900">Upload receipt photo or screenshot</span>
-          <span className="text-xs text-slate-500">Take a screenshot of the GCash confirmation screen, then choose it here.</span>
+          <span className="text-xs text-slate-500">Take a screenshot of the payment confirmation screen in your app, then choose it here.</span>
         </label>
       )}
       <input id={id} type="file" accept="image/*" className="sr-only" aria-invalid={message ? true : undefined}

@@ -1,4 +1,4 @@
-import type { BookingStatus, PaymentMethod, PaymentStatus, PaymentTxnStatus, SlotStatus } from './types';
+import type { BookingStatus, PaymentMethod, PaymentMethodConfig, PaymentStatus, PaymentTxnStatus, SlotStatus } from './types';
 
 const moneyCache = new Map<string, Intl.NumberFormat>();
 
@@ -40,9 +40,16 @@ export const paymentTxnStatusLabel: Record<PaymentTxnStatus, string> = {
   pending: 'Awaiting verification', paid: 'Verified', failed: 'Rejected', refunded: 'Refunded',
 };
 
+/** Built-in names, used only when the admin hasn't named a method (Settings > Payment methods). */
 export const paymentMethodLabel: Record<PaymentMethod, string> = {
   cash: 'Cash at the facility', bank_transfer: 'Bank transfer', gcash: 'GCash', gateway: 'Online payment',
 };
+
+/** The name customers and staff see for a payment method: the admin's label, or the built-in name. */
+export function methodName(method: PaymentMethod | null | undefined, methods?: PaymentMethodConfig[] | null): string {
+  if (!method) return '—';
+  return methods?.find((m) => m.method === method)?.label?.trim() || paymentMethodLabel[method];
+}
 
 export const slotStatusLabel: Record<SlotStatus, string> = {
   available: 'Available', held: 'On hold', held_by_you: 'Your hold', pending: 'Pending', booked: 'Booked',

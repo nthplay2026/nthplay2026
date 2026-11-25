@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  addDays, dayOfWeek, diffDays, formatClock, formatDuration, formatTime, fromLocalInput, isValidDate, localDate,
+  addDays, dailyHoursSummary, dayOfWeek, diffDays, formatClock, shortClock, formatDuration, formatTime, fromLocalInput, isValidDate, localDate,
   localMinutes, toLocalInput, zonedParts, zonedTimeToUtc,
 } from './time';
 
@@ -85,5 +85,24 @@ describe('formatting', () => {
   });
   it('formats instants in the facility zone', () => {
     expect(formatTime('2026-10-13T10:00:00Z', 'Asia/Manila')).toMatch(/^6:00\s?PM$/);
+  });
+});
+
+describe('opening hours summary', () => {
+  const week = (open: string, close: string) =>
+    Array.from({ length: 7 }, (_, d) => ({ court_id: null, day_of_week: d, is_closed: false, opening_time: open, closing_time: close }));
+  it('formats short clock times', () => {
+    expect(shortClock('06:00:00')).toBe('6 AM');
+    expect(shortClock('23:00:00')).toBe('11 PM');
+    expect(shortClock('12:30')).toBe('12:30 PM');
+  });
+  it('summarises the same hours every day', () => {
+    expect(dailyHoursSummary(week('06:00:00', '23:00:00'))).toBe('6 AM – 11 PM daily');
+    expect(dailyHoursSummary(week('00:00:00', '24:00:00'))).toBe('Open 24 hours');
+  });
+  it('returns null when days differ or a day is closed', () => {
+    const w = week('06:00:00', '23:00:00');
+    expect(dailyHoursSummary([...w.slice(0, 6), { ...w[6], closing_time: '20:00:00' }])).toBeNull();
+    expect(dailyHoursSummary([...w.slice(0, 6), { ...w[6], is_closed: true }])).toBeNull();
   });
 });

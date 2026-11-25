@@ -45,7 +45,7 @@ function WeeklyHours() {
     const base = scope && courtHasOwn ? src(scope) : src(null);
     setRows(ORDER.map((d) => {
       const h = base.find((x) => x.day_of_week === d);
-      return { day_of_week: d, is_closed: h?.is_closed ?? false, opening_time: h?.opening_time?.slice(0, 5) ?? '06:00', closing_time: h?.closing_time?.slice(0, 5) ?? '22:00' };
+      return { day_of_week: d, is_closed: h?.is_closed ?? false, opening_time: h?.opening_time?.slice(0, 5) ?? '06:00', closing_time: h?.closing_time?.slice(0, 5) ?? '23:00' };
     }));
   }, [q.data, scope, courtHasOwn]);
 

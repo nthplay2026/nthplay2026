@@ -170,3 +170,27 @@ export function relativeCountdown(msLeft: number): string {
   const s = Math.max(0, Math.floor(msLeft / 1000));
   return `${Math.floor(s / 60)}:${pad(s % 60)}`;
 }
+
+/** "06:00" -> "6 AM", "22:30" -> "10:30 PM", "24:00" -> "12 MN". */
+export function shortClock(time: string | null | undefined): string {
+  if (!time) return '';
+  const [h, m] = time.split(':').map(Number);
+  if (h === 24 || (h === 0 && m === 0 && time.startsWith('24'))) return '12 MN';
+  const suffix = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return m ? `${h12}:${pad(m)} ${suffix}` : `${h12} ${suffix}`;
+}
+
+/**
+ * One-line summary of the facility's weekly hours, e.g. "6 AM – 11 PM daily".
+ * Returns null when days differ (the full table then says it better).
+ */
+export function dailyHoursSummary(rows: { court_id: string | null; day_of_week: number; is_closed: boolean; opening_time: string | null; closing_time: string | null }[]): string | null {
+  const week = rows.filter((r) => r.court_id === null);
+  if (week.length !== 7 || week.some((r) => r.is_closed)) return null;
+  const key = (r: (typeof week)[number]) => `${r.opening_time}|${r.closing_time}`;
+  if (new Set(week.map(key)).size !== 1) return null;
+  const [o, c] = [week[0].opening_time, week[0].closing_time];
+  if (o?.startsWith('00:00') && c?.startsWith('24:00')) return 'Open 24 hours';
+  return `${shortClock(o)} – ${shortClock(c)} daily`;
+}

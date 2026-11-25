@@ -41,7 +41,8 @@ function byDay(blocks: Block[]): [string, string[]][] {
 }
 
 /** methodNames: the admin's names for payment methods (Settings > Payment methods), e.g. { gcash: 'GoTyme' }. */
-export function render(n: NotificationRow, appUrl: string, methodNames: Record<string, string> = {}): Email {
+/** hoursText: the facility's opening hours from Admin > Operating Hours, e.g. "6 AM – 11 PM daily". */
+export function render(n: NotificationRow, appUrl: string, methodNames: Record<string, string> = {}, hoursText = ''): Email {
   const p = n.payload as Record<string, string | number | null>;
   const facility = String(p.facility_name ?? "Nth Play");
   const ref = String(p.booking_reference ?? '');
@@ -181,7 +182,7 @@ export function render(n: NotificationRow, appUrl: string, methodNames: Record<s
         <p style="margin:24px 0 0; font-size:13px; line-height:1.6; color:#7d6957;">If the button doesn't work, copy and paste this link into your browser:<br /><a href="${esc(cta)}" style="color:#8c553b; word-break:break-all;">${esc(cta)}</a></p>` : ''}
       </td></tr>
       <tr><td style="padding:20px 32px; background-color:#f5ebdf; ${font} font-size:12px; line-height:1.6; color:#7d6957;">
-        ${esc(facility)} &middot; Open 6 AM &ndash; 10 PM daily${contact ? ` &middot; ${esc(contact)}` : ''}<br />
+        ${esc(facility)}${hoursText ? ` &middot; Open ${esc(hoursText)}` : ''}${contact ? ` &middot; ${esc(contact)}` : ''}<br />
         <a href="${esc(site)}" style="color:#8c553b; text-decoration:none;">${esc(site.replace(/^https?:\/\//, ''))}</a>
         &middot; <a href="https://www.facebook.com/NthPlayPickleballCourt" style="color:#8c553b; text-decoration:none;">Facebook</a>
         &middot; <a href="https://www.instagram.com/nthplay/" style="color:#8c553b; text-decoration:none;">Instagram @nthplay</a>

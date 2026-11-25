@@ -2,7 +2,7 @@
   "id": "/",
   "name": "Nth Play",
   "short_name": "Nth Play",
-  "description": "Book a pickleball court at Nth Play in seconds — live availability, open 6 AM to 10 PM daily.",
+  "description": "Book a pickleball court at Nth Play in seconds — live availability, open 6 AM to 11 PM daily.",
   "start_url": "/?source=app",
   "scope": "/",
   "display": "standalone",

@@ -47,6 +47,23 @@ export async function handle(req: Request, env: Env): Promise<Response> {
     const rows = (await r.json()) as { payment_methods?: { method: string; label?: string }[] }[];
     for (const m of rows?.[0]?.payment_methods ?? []) if (m.label?.trim()) methodNames[m.method] = m.label.trim();
   } catch { /* fall back to the built-in names */ }
+  // Opening hours for the email footer, from Admin > Operating Hours (e.g. "6 AM – 11 PM daily").
+  let hoursText = '';
+  try {
+    const r = await fetch(`${env('SUPABASE_URL')}/rest/v1/operating_hours?select=opening_time,closing_time,is_closed&court_id=is.null`, {
+      headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+    });
+    const week = (await r.json()) as { opening_time: string | null; closing_time: string | null; is_closed: boolean }[];
+    const clock = (t: string | null) => {
+      if (!t) return '';
+      const [h, m] = t.split(':').map(Number);
+      const h12 = h % 12 === 0 ? 12 : h % 12;
+      return `${h12}${m ? `:${String(m).padStart(2, '0')}` : ''} ${h >= 12 && h < 24 ? 'PM' : 'AM'}`;
+    };
+    if (week.length === 7 && !week.some((d) => d.is_closed) && new Set(week.map((d) => `${d.opening_time}|${d.closing_time}`)).size === 1) {
+      hoursText = `${clock(week[0].opening_time)} – ${clock(week[0].closing_time)} daily`;
+    }
+  } catch { /* the footer simply leaves the hours out */ }
 
   const reminders = await rpc<number>('enqueue_reminders');
   const batch = await rpc<NotificationRow[]>('claim_notifications', { p_limit: 25 });
@@ -67,7 +84,7 @@ export async function handle(req: Request, env: Env): Promise<Response> {
         continue;
       }
 
-      const email = render(n, appUrl, methodNames);
+      const email = render(n, appUrl, methodNames, hoursText);
       if (gmail) {
         await gmail.send(n.recipient_email, email.subject, email.html, email.text);
         await rpc('complete_notification', { p_id: n.id, p_success: true, p_provider_message_id: `gmail:${n.idempotency_key}` });

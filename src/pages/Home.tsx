@@ -4,6 +4,7 @@ import { useFacility } from '@/hooks/useFacility';
 import { useAsync } from '@/hooks/useAsync';
 import { api } from '@/lib/api';
 import { money } from '@/lib/format';
+import { dailyHoursSummary } from '@/lib/time';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, Skeleton } from '@/components/ui/misc';
 import { CourtImage } from '@/components/booking/CourtVisual';
@@ -14,6 +15,9 @@ import { InstallBanner } from '@/components/layout/InstallApp';
 export default function HomePage() {
   const { settings, courts, currency, loading } = useFacility();
   const rules = useAsync(() => api.pricingRules(), []);
+  const hours = useAsync(() => api.operatingHours(), []);
+  // From Admin > Operating Hours, so this badge follows any change.
+  const hoursText = hours.data ? dailyHoursSummary(hours.data) ?? 'See opening hours' : null;
   const single = courts.length === 1 ? courts[0] : null;
 
   return (
@@ -57,7 +61,7 @@ export default function HomePage() {
             </div>
             <div className="absolute -bottom-5 -left-8 rounded-2xl bg-white px-4 py-3 text-ink-900 shadow-lift">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Operating hours</p>
-              <p className="text-xl font-extrabold">6 AM – 10 PM daily</p>
+              <p className="text-xl font-extrabold">{hoursText ?? '\u00a0'}</p>
             </div>
           </div>
         </div>

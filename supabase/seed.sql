@@ -1,8 +1,8 @@
 -- =============================================================================
--- Facility data: Nth Play, one outdoor pickleball court, open 6:00 AM – 10:00 PM daily.
+-- Facility data: Nth Play, one outdoor pickleball court, open 6:00 AM – 11:00 PM daily.
 -- Rates (per hour):
---   Mon–Thu  6:00 AM – 4:00 PM  ₱350   |  4:00 PM – 10:00 PM  ₱400
---   Fri–Sun  6:00 AM – 4:00 PM  ₱400   |  4:00 PM – 10:00 PM  ₱450
+--   Mon–Thu  6:00 AM – 4:00 PM  ₱350   |  4:00 PM – 11:00 PM  ₱400
+--   Fri–Sun  6:00 AM – 4:00 PM  ₱400   |  4:00 PM – 11:00 PM  ₱450
 -- Payment: GCash (add the QR code in Admin → Settings once available).
 -- Everything here is editable later in the admin dashboard.
 -- Safe to run more than once.
@@ -11,13 +11,13 @@
 update public.facility_settings set
   facility_name = 'Nth Play',
   tagline = 'Your Court. Your Time. Your Game.',
-  description = 'An outdoor pickleball court with a shade canopy and night lighting — open 6 AM to 10 PM, every day.',
+  description = 'An outdoor pickleball court with a shade canopy and night lighting — open 6 AM to 11 PM, every day.',
   allow_cross_midnight = false,
   contact_email = '',
   contact_phone = '',
   address = '',
   map_url = '',
-  amenities = array['Shade canopy', 'Night lighting', 'Open 6 AM – 10 PM daily'],
+  amenities = array['Shade canopy', 'Night lighting', 'Open 6 AM – 11 PM daily'],
   admin_alert_email = '',
   max_duration_minutes = 720,  -- customers can tap up to 12 one-hour slots
   min_advance_minutes = 0,     -- a slot stays bookable until it ends (e.g. 4-5 PM until 5 PM)
@@ -42,13 +42,13 @@ on conflict (id) do update set
 delete from public.court_pricing;
 insert into public.court_pricing (court_id, label, days_of_week, start_time, end_time, rate, priority) values
   (null, 'Weekday day',     array[1,2,3,4]::smallint[], '06:00', '16:00', 350.00, 0),
-  (null, 'Weekday evening', array[1,2,3,4]::smallint[], '16:00', '22:00', 400.00, 0),
+  (null, 'Weekday evening', array[1,2,3,4]::smallint[], '16:00', '23:00', 400.00, 0),
   (null, 'Weekend day',     array[5,6,0]::smallint[],   '06:00', '16:00', 400.00, 0),
-  (null, 'Weekend evening', array[5,6,0]::smallint[],   '16:00', '22:00', 450.00, 0);
+  (null, 'Weekend evening', array[5,6,0]::smallint[],   '16:00', '23:00', 450.00, 0);
 
--- Open 6:00 AM – 10:00 PM, every day.
+-- Open 6:00 AM – 11:00 PM, every day.
 delete from public.operating_hours where court_id is not null;
 insert into public.operating_hours (court_id, day_of_week, opening_time, closing_time, is_closed)
-select null, d, '06:00', '22:00', false from generate_series(0, 6) as d
+select null, d, '06:00', '23:00', false from generate_series(0, 6) as d
 on conflict (court_id, day_of_week) do update
   set opening_time = excluded.opening_time, closing_time = excluded.closing_time, is_closed = false;

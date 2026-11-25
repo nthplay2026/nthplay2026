@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
+import { Pencil } from 'lucide-react';
 import { useFacility } from '@/hooks/useFacility';
 import { useAsync } from '@/hooks/useAsync';
 import { api } from '@/lib/api';
@@ -331,7 +332,15 @@ function PaymentMethods() {
       {form.payment_methods.map((m, i) => (
         <Card key={m.method}>
           <CardHeader className="flex-row items-center justify-between">
-            <div><CardTitle>{m.label?.trim() || paymentMethodLabel[m.method]}</CardTitle>
+            <div className="min-w-0 flex-1">
+              {/* The heading is the method's name: click it to rename (e.g. GCash -> GoTyme Bank). */}
+              <label className="group flex max-w-md items-center gap-2 rounded-lg border border-transparent px-2 py-1 -mx-2 focus-within:border-brand-600 focus-within:bg-white hover:border-slate-300">
+                <span className="sr-only">Payment method name</span>
+                <input value={m.label} maxLength={40} placeholder={paymentMethodLabel[m.method]}
+                  onChange={(e) => upd(i, { label: e.target.value })}
+                  className="min-w-0 flex-1 bg-transparent text-lg font-semibold text-ink-900 outline-none placeholder:text-slate-400" />
+                <Pencil className="size-4 shrink-0 text-slate-400 group-hover:text-ink-700" aria-hidden />
+              </label>
               <CardDescription>
                 {m.method === 'cash' && 'Customer pays at the front desk; staff record it from the booking.'}
                 {(m.method === 'gcash' || m.method === 'bank_transfer') && 'Customer pays outside the app and submits the reference; an admin verifies it.'}
@@ -342,9 +351,6 @@ function PaymentMethods() {
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <Checkbox label="Offer this method" checked={m.enabled} disabled={m.method === 'gateway' && !m.enabled} onChange={(e) => upd(i, { enabled: e.target.checked })} className="sm:col-span-2" />
-            <Field label="Payment method name" hint={`Shown to customers and staff everywhere: checkout, booking details, payments and emails. E.g. rename ${paymentMethodLabel[m.method]} to GoTyme.`}>
-              <Input value={m.label} maxLength={40} placeholder={paymentMethodLabel[m.method]} onChange={(e) => upd(i, { label: e.target.value })} />
-            </Field>
             {(m.method === 'gcash' || m.method === 'bank_transfer') && <>
               <div className="flex items-center gap-3 sm:col-span-2">
                 {m.qr_url
